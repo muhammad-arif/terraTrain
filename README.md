@@ -102,6 +102,7 @@ To generate the client bundle
 ```
 tt-genClientBundle
 ```
+After generating the client bundle you can run `k get nodes`, `kubectl get pods -A`, `docker node ls`, `d ps` etc. docker and kubectl client are installed in the container.
 
 To delete the cluster,
 ```
