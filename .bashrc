@@ -122,15 +122,15 @@ tt-run() {
 var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
 terraform apply -var-file=config.tfvars -auto-approve -compact-warnings
-echo "Do you want to see MKE installation logs?"
-echo "Press y to see the logs and press any other key to ignore"
-read input
-if (( "$input" == "y" || "$input" == "Y"   )) ; then
-    ucp="$(terraform show | sed -n '/Outputs:/,//p' | grep https | awk -F '"' '{print $2}' | awk -F '/' '{print $3}')"
-    ssh -i key-pair -o StrictHostKeyChecking=false $amiUserName@$ucp "sudo tail -f /var/log/cloud-init-output.log"   
-else
-    exit 0
-fi
+#echo "Do you want to see MKE installation logs?"
+#echo "Press y to see the logs and press any other key to ignore"
+#read input
+#if (( "$input" == "y" || "$input" == "Y"   )) ; then
+#    ucp="$(terraform show | sed -n '/Outputs:/,//p' | grep https | awk -F '"' '{print $2}' | awk -F '/' '{print $3}')"
+#    ssh -i key-pair -o StrictHostKeyChecking=false $amiUserName@$ucp "sudo tail -f /var/log/cloud-init-output.log"   
+#else
+#    exit 0
+#fi
 }
 
 # terraTrain-show function to list the cluster details (less efficient than cat) [time of execution: real	0m1.403s, user	0m1.719s, sys	0m0.197s]
