@@ -45,7 +45,7 @@ Clone this repo or just download the folder and unzip it and change directory in
 
 Build the container image,
 ```
-sudo docker build -t terratrain:latest .
+sudo docker build -t terratrain:v1 .
 ```
 Set the id of the case you are working on by create a variable so that you can find and relate with the container 
 ```
@@ -53,7 +53,7 @@ CASEID=40705683
 ```
 Run following command to get into the terraTrain container,
 ```
-sudo docker run -it --hostname case-${CASEID} --name case_${CASEID} terratrain:latest
+sudo docker run -it --hostname case-${CASEID} --name case_${CASEID} terratrain:v1
 ```
 Then you will be entered into the terraTrain environment, something like the following,
 ```
