@@ -16,8 +16,13 @@ region="eu-central-1"
 #ami="ami-0f86cdae67e730b21"		 # Ubuntu 16.04 
 ami="ami-0e1ce3e0deb8896d2"		 # Ubuntu 18.04 
 
-## Common usernames, Ubuntu = ubuntu, RHEL = ec2-user, Centos = centos, SLES = ec2-user
+## For Ubuntu ami username should be ubuntu, RHEL = ec2-user, Centos = centos, SLES = ec2-user
 amiUserName="ubuntu" 
+## For RHEL or SLES ami username should be ec2-user
+#amiUserName="ec2-user" 
+
+## For Centos ami username should be centos
+#amiUserName="centos" 
 
 #### If you want to change the public key, then create a new key pair and 
 #### renamed your private key as "key-pair" first. Then change the following section
