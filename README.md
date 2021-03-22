@@ -118,3 +118,23 @@ Following fetures will be available on the next release,
 2. Windows as worker node
 3. Creating a MKE cluster on Azure
 4. Many more AMIs
+
+
+### Intermediate usages
+#### Changing ssh key-pair
+
+1. Change directory to the terraTrain folder
+2. Remove previous key-pair and key-pair.pub files
+3. Generate a new key-pair
+    ```
+    ssh-keygen -t rsa -b 4096 -f key-pair
+    ```
+4. Copy the public key 
+    ```
+    cat key-pair.pub
+    ```
+5. Update the following key value pair in `config.tfvars` with the newly created key-pair.pub
+    ```
+    publicKey="ssh-rsa AAAAB81tUJkq734us= arif@arif-mirantis-laptop"
+    ```
+6. Build your image again and you are ready to use it
