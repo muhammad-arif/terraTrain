@@ -10,8 +10,6 @@ region="eu-central-1"
 ###### AMI Informations
 ###### From AWS dashboard select your region. And from Services select EC2. and from the Left bar select AMIs
 ###### Then search your desired AMI's and change the following AMI ID. This only works for Frankfurt region
-#ami= "ami-875042eb"			 # RedHat 7.2  
-#ami="ami-dafdcfc7"			 # RedHat 7.7  
 #ami="ami-06c0e8e713058d7be" 		 # RedHat 7.8  
 #ami="ami-0e8286b71b81c3cc1"		 # Centos 7
 #ami="ami-07fa74e425f2abf29"		 # Centos 6
