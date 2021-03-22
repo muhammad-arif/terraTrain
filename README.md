@@ -38,6 +38,7 @@ What do you need before using this?
 11. To remove all the components of the cluster use `tt-purge` command.
 
 
+## Configuring and Running terraTrain
 ### Install the platform
 
 Clone this repo or just download the folder and unzip it and change directory into it.
