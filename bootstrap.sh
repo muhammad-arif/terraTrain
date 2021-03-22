@@ -14,5 +14,10 @@ apt-get -y update && apt-get install -y terraform  docker-ce-cli
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" 
 cp kubectl /usr/local/bin/kubectl
 chmod 755 /usr/local/bin/kubectl
+
+#fixing perm issue for key-pair
+chmod 600 /terraTrain/key-pair
+
+
 cp .bashrc /root/.bashrc
 source config.tfvars
