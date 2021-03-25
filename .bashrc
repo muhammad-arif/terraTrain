@@ -114,6 +114,7 @@ source /terraTrain/config.tfvars
 complete -C /usr/bin/terraform terraform
 alias d="docker"
 alias k="kubectl"
+alias k-n-kubesystem="kubectl -n kube-system"
 alias tt-purge="terraform destroy --force -compact-warnings -var-file=config.tfvars"
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
