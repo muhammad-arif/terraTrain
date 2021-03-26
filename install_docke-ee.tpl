@@ -23,13 +23,14 @@ elif [ -f /etc/SuSe-release ]; then
     ...
 elif [ -f /etc/redhat-release ]; then
     # Older Red Hat, CentOS, etc.
-    OS=Red
-    VER=
+    OS=$(awk '{print $1}' /etc/redhat-release)
+    VER=6
 else
     # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
     OS=$(uname -s)
     VER=$(uname -r)
 fi
+
 
 
 if [ $(echo $OS | awk '{print $1}') == 'Red' ]; then
@@ -44,26 +45,26 @@ if [ $(echo $OS | awk '{print $1}') == 'Red' ]; then
    yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.107-3.el7.noarch.rpm
    yum install -y containerd.io 
    if [ $(echo ${dockerVERSION} | sed -n 's/\./\n/pg' | wc -l) == 3 ]; then SELECTOR="head -n 1" ; else SELECTOR="tail -n 1" ; fi
-   
    yum -y install docker-ee-$(yum list docker-ee  --showduplicates | grep ${dockerVERSION} | sort -k3 |awk '{print $2}' | awk -F ':' '{print $2}'  | $SELECTOR) docker-ee-cli-$(yum list docker-ee-cli  --showduplicates | grep ${dockerVERSION} | sort -k3 |awk '{print $2}' |awk -F ':' '{print $2}'  | $SELECTOR)   
-   
    systemctl enable docker
    systemctl start docker
 
-
 #elif [ $(echo $OS | awk '{print $1}') = 'SLES' ]; then
 
-elif [ $(echo $OS | awk '{print $1}') == 'Centos' ]; then 
-   sudo yum update -y
-   sudo yum install -y yum-utils
-   export DOCKERURL="${dockerURL}"
-   export VER="$(echo $VER | awk -F '.' '{print $1}')"
-   sudo -E sh -c 'echo "$VER" > /etc/yum/vars/dockerosversion'
-   sudo -E sh -c 'echo "$DOCKERURL/centos" > /etc/yum/vars/dockerurl'
-   sudo -E yum-config-manager --add-repo "${dockerURL}/centos/docker-ee.repo"
-   sudo yum -y install docker-ee-${dockerVERSION} docker-ee-cli-${dockerVERSION} containerd.io
-   sudo systemctl enable docker
-   sudo systemctl start docker
+elif [ $(echo $OS | awk '{print $1}') == 'CentOS' ]; then 
+   echo "https://repos.mirantis.com/centos" > /etc/yum/vars/dockerurl
+   VER="$(echo $VER | awk -F '.' '{print $1}')"
+   echo "$VER" | tee /etc/yum/vars/dockerosversion
+   yum install -y yum-utils device-mapper-persistent-data lvm2
+   yum-config-manager --enable rhel-7-server-extras-rpms
+   yum-config-manager --enable rhui-REGION-rhel-server-extras
+   yum install -y rh-amazon-rhui-client
+   yum-config-manager      --add-repo      "https://repos.mirantis.com/centos/docker-ee.repo"
+   if [ $(echo ${dockerVERSION} | sed -n 's/\./\n/pg' | wc -l) == 3 ]; then SELECTOR="head -n 1" ; else SELECTOR="tail -n 1" ; fi
+   yum -y install docker-ee-$(yum list docker-ee  --showduplicates | grep ${dockerVERSION} | sort -k3 |awk '{print $2}' | awk -F ':' '{print $2}'  | $SELECTOR) docker-ee-cli-$(yum list docker-ee-cli  --showduplicates | grep ${dockerVERSION} | sort -k3 |awk '{print $2}' |awk -F ':' '{print $2}'  | $SELECTOR)   
+   systemctl enable docker
+   systemctl start docker
+   
 
 
 elif [ $(echo $OS | awk '{print $1}') == 'Ubuntu' ] ; then
