@@ -1,7 +1,8 @@
 ###### Configuration File #######
-# JUST UNCOMMENT WHAT YOU NEED
+# JUST UNCOMMENT WHAT YOU NEED and COMMENT WHAT YOU DON'T
+
 ###### Test Information
-name="terraTrain-case-"
+name="YOURNAME-caseNo"
 caseNo=""
 
 ###### AWS Informations
