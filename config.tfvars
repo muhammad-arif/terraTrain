@@ -5,7 +5,9 @@ name="terraTrain-case-"
 caseNo=""
 
 ###### AWS Informations
+###### Please beware that if you change the region you need to change the ami-id too.
 region="eu-central-1"
+
 
 ###### AMI Informations
 ###### From AWS dashboard select your region. And from Services select EC2. and from the Left bar select AMIs
@@ -16,8 +18,9 @@ region="eu-central-1"
 #ami="ami-0f86cdae67e730b21"		 # Ubuntu 16.04 
 ami="ami-0e1ce3e0deb8896d2"		 # Ubuntu 18.04 
 
-## For Ubuntu ami username should be ubuntu, RHEL = ec2-user, Centos = centos, SLES = ec2-user
+###### For Ubuntu ami username should be ubuntu
 amiUserName="ubuntu" 
+
 ## For RHEL or SLES ami username should be ec2-user
 #amiUserName="ec2-user" 
 
