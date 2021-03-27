@@ -34,13 +34,13 @@ fi
 
 
 if [ $(echo $OS | awk '{print $1}') == 'Red' ]; then
-   setenforce 0
    echo "https://repos.mirantis.com/rhel" > /etc/yum/vars/dockerurl
-   grep "VERSION_ID" /etc/os-release | sed -n 's/VERSION_ID="\(.*\)"$/\1/p' | tee /etc/yum/vars/dockerosversion
+   grep "VERSION_ID" /etc/os-release | sed -n 's/VERSION_ID="\(.*\)"$/\1/p' | awk -F '.' '{print $1}' | tee /etc/yum/vars/dockerosversion
    yum install -y yum-utils device-mapper-persistent-data lvm2
    yum-config-manager --enable rhel-7-server-extras-rpms
    yum-config-manager --enable rhui-REGION-rhel-server-extras
    yum-config-manager      --add-repo      "https://repos.mirantis.com/rhel/docker-ee.repo"
+   yum install -y iptables-services
    yum install -y rh-amazon-rhui-client
    yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.107-3.el7.noarch.rpm
    yum install -y containerd.io 

@@ -34,13 +34,13 @@ fi
 
 
 if [ $(echo $OS | awk '{print $1}') == 'Red' ]; then
-   setenforce 0
    echo "https://repos.mirantis.com/rhel" > /etc/yum/vars/dockerurl
-   grep "VERSION_ID" /etc/os-release | sed -n 's/VERSION_ID="\(.*\)"$/\1/p' | tee /etc/yum/vars/dockerosversion
+   grep "VERSION_ID" /etc/os-release | sed -n 's/VERSION_ID="\(.*\)"$/\1/p' | awk -F '.' '{print $1}' | tee /etc/yum/vars/dockerosversion
    yum install -y yum-utils device-mapper-persistent-data lvm2
    yum-config-manager --enable rhel-7-server-extras-rpms
    yum-config-manager --enable rhui-REGION-rhel-server-extras
    yum-config-manager      --add-repo      "https://repos.mirantis.com/rhel/docker-ee.repo"
+   yum install -y iptables-services
    yum install -y rh-amazon-rhui-client
    yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.107-3.el7.noarch.rpm
    yum install -y containerd.io 
@@ -48,7 +48,7 @@ if [ $(echo $OS | awk '{print $1}') == 'Red' ]; then
    yum -y install docker-ee-$(yum list docker-ee  --showduplicates | grep ${dockerVERSION} | sort -k3 |awk '{print $2}' | awk -F ':' '{print $2}'  | $SELECTOR) docker-ee-cli-$(yum list docker-ee-cli  --showduplicates | grep ${dockerVERSION} | sort -k3 |awk '{print $2}' |awk -F ':' '{print $2}'  | $SELECTOR)   
    systemctl enable docker
    systemctl start docker
-
+   
 #elif [ $(echo $OS | awk '{print $1}') = 'SLES' ]; then
 
 elif [ $(echo $OS | awk '{print $1}') == 'CentOS' ]; then 
@@ -100,6 +100,7 @@ docker container run -i --rm --name ucp     \
     $MKEREPOSITORY:${ucpVERSION} install           \
     --host-address $HOSTADDRESS \
     --san $SAN \
+    --cloud-provider aws
     --admin-username ${ucpAdminName} \
     --admin-password ${ucpAdminPass} 
 
