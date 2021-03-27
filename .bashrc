@@ -115,44 +115,55 @@ complete -C /usr/bin/terraform terraform
 alias d="docker"
 alias k="kubectl"
 alias k-n-kubesystem="kubectl -n kube-system"
-alias tt-purge="terraform destroy --force -compact-warnings -var-file=config.tfvars"
+alias tt-purge="terraform destroy --force -compact-warnings -var-file=/terraTrain/config.tfvars"
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
 # terraTrain-run function to create a cluster
 tt-run() {
 var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
-terraform apply -var-file=config.tfvars -auto-approve -compact-warnings
-#echo "Do you want to see MKE installation logs?"
-#echo "Press y to see the logs and press any other key to ignore"
-#read input
-#if (( "$input" == "y" || "$input" == "Y"   )) ; then
-#    ucp="$(terraform show | sed -n '/Outputs:/,//p' | grep https | awk -F '"' '{print $2}' | awk -F '/' '{print $3}')"
-#    ssh -i key-pair -o StrictHostKeyChecking=false $amiUserName@$ucp "sudo tail -f /var/log/cloud-init-output.log"   
-#else
-#    exit 0
-#fi
+terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings
+echo "Yey! All of the instance were created by MKE installation is still in progress."
+echo "Do you want to see MKE installation logs?"
+echo "Press y to see the logs and press any other key to ignore"
+echo "You can close this log watching session with ctrl+c"
+
+read input
+if (( "$input" == 'y' || "$input" == 'Y' )) ; then
+    mke=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
+    mke_username=$(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n")
+
+    if (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'ubuntu' )) ; then 
+    ssh -i key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/cloud-init-output.log"   
+
+    elif (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'ec2-user' )) ; then
+    # redhat 7 put all the cloud-init logs inside messages where redhat 8 uses cloud-init-output.log file
+    ssh -i key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "if [ ! -f /var/log/cloud-init-output.log ] ; then sudo tail -f /var/log/messages | grep cloud-init; else sudo tail -f /var/log/cloud-init-output.log; fi"
+    
+    elif (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'centos' )) ; then
+    mke=$(cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
+    ssh -i key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/messages | grep cloud-init"   
+
+    else
+        echo "My bad. Can't detect the os"
+    fi
+else
+    exit 0
+fi
 }
 
-# terraTrain-show function to list the cluster details (less efficient than cat) [time of execution: real	0m1.403s, user	0m1.719s, sys	0m0.197s]
-#terraTrain-show() {
-#terraform show -json terraform.tfstate | jq '.values.root_module.resources[] | select(.name=="ucp-leader") | { Name: .values.tags.Name, Hostname: .values.private_dns, PrivateIP: .values.private_ip, PublicDNS: .values.public_dns, PublicIP: .values.public_ip }'
-#terraform show -json terraform.tfstate | jq '.values.root_module.resources[] | select(.name=="managerNode") | { Name: .values.tags.Name, Hostname: .values.private_dns, PrivateIP: .values.private_ip, PublicDNS: .values.public_dns, PublicIP: .values.public_ip }'
-#terraform show -json terraform.tfstate | jq '.values.root_module.resources[] | select(.name=="workerNode") | { Name: .values.tags.Name, Hostname: .values.private_dns, PrivateIP: .values.private_ip, PublicDNS: .values.public_dns, PublicIP: .values.public_ip }'
-#terraform show -json terraform.tfstate | jq '.values.root_module.resources[] | select(.name=="dtrNode") | { Name: .values.tags.Name, Hostname: .values.private_dns, PrivateIP: .values.private_ip, PublicDNS: .values.public_dns, PublicIP: .values.public_ip }'
-#}
 
 # terraTrain-show function to list the cluster details (more efficient than terraform binary) [time of execution: real	0m0.021s, user	0m0.019s, sys	0m0.005s ]
 tt-show() {
 printf "\n\n Leader Node: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 printf "\n\n Manager Nodes: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 printf "\n\n MSR Nodes: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 printf "\n\n Worker Nodes: \n"
 echo "-------------------------------------------------------------------------------"
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
@@ -160,17 +171,17 @@ cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode
 tt-show-ldr() {
 printf "\n\n Leader Node: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 tt-show-mgr() {
 printf "\n\n Manager Nodes: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 tt-show-msr() {
 printf "\n\n MSR Nodes: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 tt-show-wkr() {
 printf "\n\n Worker Nodes: \n"
@@ -178,6 +189,11 @@ echo "--------------------------------------------------------------------------
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 
+tt-show-wkr() {
+printf "\n\n Worker Nodes: \n"
+echo "-------------------------------------------------------------------------------"
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PrivateIP: .attributes.private_ip, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+}
 # Connect function to ssh into a machine
 connect() {
 ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $1
