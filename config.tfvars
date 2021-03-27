@@ -15,9 +15,10 @@ region="eu-central-1"
 ###### From AWS dashboard select your region. And from Services select EC2. and from the Left bar select AMIs
 ###### Then search your desired AMI's and change the following AMI ID. Followings only work for eu-central-1 region 
 ###### At this moment only the following AMIs are supported. Change/add them at your own risk
-#ami="ami-06c0e8e713058d7be" 		 # RedHat 7.8  
-#ami="ami-0e8286b71b81c3cc1"              # Centos 7
-#ami="ami-0f86cdae67e730b21"		 # Ubuntu 16.04 
+#ami="ami-009b16df9fcaac611"        # RedHat 8(latest)
+#ami="ami-06c0e8e713058d7be"        # RedHat 7.8  
+#ami="ami-0e8286b71b81c3cc1"        # Centos 7
+#ami="ami-0f86cdae67e730b21"        # Ubuntu 16.04 
 ami="ami-0e1ce3e0deb8896d2"		 # Ubuntu 18.04 
 
 ###### For Ubuntu ami username should be ubuntu,
