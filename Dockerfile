@@ -24,7 +24,8 @@ RUN apt-get update && apt-get install -y \
     tmux
 
 ADD . /terraTrain
-RUN chmod +x bootstrap.sh && ./bootstrap.sh
+RUN chmod +x bootstrap.sh
+RUN ./bootstrap.sh
 ENV HOME /terraTrain
 RUN terraform init -input=false
 ENTRYPOINT ["/bin/bash"]
