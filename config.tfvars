@@ -6,6 +6,8 @@ caseNo=""
 
 ###### AWS Informations
 region="eu-central-1"
+aws_profile="PowerUserAccess-043802220583-SSO"
+aws_shared_credentials_file="~/.aws/credentials"
 
 ###### AMI Informations
 ###### From AWS dashboard select your region. And from Services select EC2. and from the Left bar select AMIs

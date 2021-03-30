@@ -3,6 +3,15 @@ variable "region" {
   description = "This is where you have to mention region"
   default = "ap-northeast-1"
 }
+variable "aws_shared_credentials_file" {
+  type = string
+  default = "~/.aws/credentials"
+}
+
+variable "aws_profile" {
+  type = string
+  default = "PowerUserAccess-043802220583-SSO"
+}
 
 variable "name" {
   type        = string
