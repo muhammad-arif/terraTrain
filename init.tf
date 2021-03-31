@@ -3,6 +3,16 @@ variable "region" {
   description = "This is where you have to mention region"
   default = "ap-northeast-1"
 }
+variable "aws_shared_credentials_file" {
+  type = string
+  default = "~/.aws/credentials"
+}
+
+variable "aws_profile" {
+  type = string
+  default = "PowerUserAccess-043802220583-SSO"
+}
+
 variable "name" {
   type        = string
   description = "This is the Parent instance type name. \nFor 3 instance it would be like the following,\nIf the name is helios \n1. helios-ucp-leader\n2. helios_instance-0\n3. helios_instance-1"
@@ -44,7 +54,6 @@ variable "workerInstanceType" {
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
 }
 variable "managerInstanceType" {
-  type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
 }
 variable "publicKey" {
@@ -62,7 +71,6 @@ variable "mke_repo" {
 }
 variable "docker_ee_version" {
   type        = string
-  default = "19.03"
 }
 variable "docker_ucp_version" {
   type        = string
