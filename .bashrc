@@ -134,6 +134,10 @@ terraform apply -var-file=config.tfvars -auto-approve -compact-warnings
 #fi
 }
 
+tt-plan() {
+    terraform plan -var-file=config.tfvars
+}
+
 # terraTrain-show function to list the cluster details (less efficient than cat) [time of execution: real	0m1.403s, user	0m1.719s, sys	0m0.197s]
 #terraTrain-show() {
 #terraform show -json terraform.tfstate | jq '.values.root_module.resources[] | select(.name=="ucp-leader") | { Name: .values.tags.Name, Hostname: .values.private_dns, PrivateIP: .values.private_ip, PublicDNS: .values.public_dns, PublicIP: .values.public_ip }'
