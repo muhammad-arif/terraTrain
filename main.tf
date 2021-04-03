@@ -9,7 +9,9 @@ terraform {
 
 # Configure the AWS Provider
 provider "aws" {
-  region = var.region
+  region = var.region  
+  shared_credentials_file = var.aws_shared_credentials_file
+  profile = var.aws_profile
 }
 # Creating a local variable for generating randomness
 locals {
