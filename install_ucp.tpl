@@ -100,7 +100,6 @@ docker container run -i --rm --name ucp     \
     $MKEREPOSITORY:${ucpVERSION} install           \
     --host-address $HOSTADDRESS \
     --san $SAN \
-    --cloud-provider aws \
     --admin-username ${ucpAdminName} \
     --admin-password ${ucpAdminPass} 
 
