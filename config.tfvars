@@ -52,8 +52,6 @@ dtrInstanceType="c4.xlarge"
 docker_ee_version="19.03" # E.g. 18.09.1, 19.03.11, 19.03 - will install the latest of 19.03 which is 14 at this moment
 docker_ucp_version="3.3.4"
 docker_dtr_version="2.8.2"
-admin_username="admin"
-admin_password="dockeradmin"
 
 #---------------------------------------------------------------------------------------------------------------------------
 # Check Again Please

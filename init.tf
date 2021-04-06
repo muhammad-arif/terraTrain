@@ -80,14 +80,6 @@ variable "docker_dtr_version" {
   type        = string
   description = "Please type your desired DTR version"
 }
-variable "admin_username" {
-  type        = string
-  default = "admin"
-}
-variable "admin_password" {
-  type        = string
-  default = "dockeradmin"
-}
 
 #### WORKER INSTALLATION CONFIG ####
 data "template_file" "worker_file" {
@@ -114,8 +106,8 @@ data "template_file" "ucp_file" {
       dockerURL = "${var.docker_ee_url}"
       dockerVERSION = "${var.docker_ee_version}"
       ucpVERSION = "${var.docker_ucp_version}"
-      ucpAdminName = "${var.admin_username}"
-      ucpAdminPass = "${var.admin_password}"
+      ucpAdminName = "${random_password.mke_username.result}"
+      ucpAdminPass = "${random_password.mke_password.result}"
       amiUSERNAME = "${var.amiUserName}"
       dtrVERSION = "${var.docker_dtr_version}"
       mkeREPOSITORY = "${var.mke_repo}"

@@ -13,6 +13,15 @@ provider "aws" {
   shared_credentials_file = var.aws_shared_credentials_file
   profile = var.aws_profile
 }
+# Creating two random password for MKE username and Password
+resource "random_password" "mke_username" {
+  length  = 12
+  special = false
+}
+resource "random_password" "mke_password" {
+  length  = 12
+  special = true
+}
 # Creating a local variable for generating randomness
 locals {
   tstmp = formatdate("hh-mm-ss",timestamp())

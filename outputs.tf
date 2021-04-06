@@ -1,19 +1,19 @@
-output "managers-list" {
-  value       = [aws_instance.managerNode.*.public_dns]
-}
-output "workers-list" {
-  value       = [aws_instance.workerNode.*.public_dns]
-}
-output "dtrs-list" {
-  value       = [aws_instance.dtrNode.*.public_dns]
-}
-
-output "ssh-ucp" {
-  value       = "ssh -i key-pair -o StrictHostKeyChecking=false ${var.amiUserName}@${aws_instance.ucp-leader.public_dns}"
-}
-output "UCP-URL" {
-  value       = "https://${aws_instance.ucp-leader.public_dns}"
-}
+#output "managers-list" {
+#  value       = [aws_instance.managerNode.*.public_dns]
+#}
+#output "workers-list" {
+#  value       = [aws_instance.workerNode.*.public_dns]
+#}
+#output "dtrs-list" {
+#  value       = [aws_instance.dtrNode.*.public_dns]
+#}
+#
+#output "ssh-ucp" {
+#  value       = "ssh -i key-pair -o StrictHostKeyChecking=false ${var.amiUserName}@${aws_instance.ucp-leader.public_dns}"
+#}
+#output "UCP-URL" {
+#  value       = "https://${aws_instance.ucp-leader.public_dns}"
+#}
 
 
 
