@@ -153,7 +153,7 @@ terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warni
 #else
 #    exit 0
 #fi
-tt-show()
+tt-show
 }
 
 
@@ -162,7 +162,7 @@ tt-show() {
 printf "\n\n MKE's Username and Password: \n"
 echo "-------------------------------------------------------------------------------"
 printf '\e[1;34m%-6s\e[m' "Username: "
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.result' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
 printf  '\e[1;34m%-6s\e[m' "Password: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
 
@@ -183,7 +183,7 @@ tt-show-mke-creds() {
 printf "\n\n MKE's Username and Password: \n"
 echo "-------------------------------------------------------------------------------"
 printf '\e[1;34m%-6s\e[m' "Username: "
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.result' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
 printf '\e[1;34m%-6s\e[m' "Password: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
 }
@@ -192,7 +192,7 @@ printf "\n\n Leader Node: \n"
 echo "-------------------------------------------------------------------------------"
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 printf '\e[1;34m%-6s\e[m' "Username: "
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.result' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
 printf '\e[1;34m%-6s\e[m' "Password: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
 
@@ -213,7 +213,38 @@ echo "--------------------------------------------------------------------------
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 
+tt-msr-rethinkcli() {
+msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
+ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr 'exec sudo docker run -it --rm --net dtr-ol -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.2.0  e6e1331b4888'
+}
+
+tt-msr-login() {
+
+msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
+uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+if [[ -d /terraTrain/client-bundle ]] 
+    then 
+    curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
+    update-ca-certificates
+    docker login $msr -u $uname -p $pass
+else 
+    tt-genClientBundle
+    curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
+    update-ca-certificates
+    docker login $msr -u $uname -p $pass
+fi
+}
+tt-msr-populate-img() {
+msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
+
+}
+tt-msr-populate-orgs() {
+msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
+
+}
+
 # Connect function to ssh into a machine
 connect() {
-ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $1
+ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $1 "$2"
 }

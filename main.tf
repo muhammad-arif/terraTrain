@@ -14,13 +14,13 @@ provider "aws" {
   profile = var.aws_profile
 }
 # Creating two random password for MKE username and Password
-resource "random_password" "mke_username" {
-  length  = 12
-  special = false
+resource "random_pet" "mke_username" {
+  length  = 2
 }
-resource "random_password" "mke_password" {
+resource "random_string" "mke_password" {
   length  = 12
   special = true
+  override_special = "/()"
 }
 # Creating a local variable for generating randomness
 locals {

@@ -16,6 +16,7 @@ region="eu-central-1"
 ###### Then search your desired AMI's and change the following AMI ID. Followings only work for eu-central-1 region 
 ###### At this moment only the following AMIs are supported. Change/add them at your own risk
 #ami="ami-009b16df9fcaac611"        # RedHat 8(latest)
+#ami="ami-0f58468b80db2db66"	    # RedHat 7.9
 #ami="ami-06c0e8e713058d7be"        # RedHat 7.8  
 #ami="ami-0e8286b71b81c3cc1"        # Centos 7
 #ami="ami-0f86cdae67e730b21"        # Ubuntu 16.04 

@@ -8,9 +8,12 @@ if [[ -d client-bundle ]]
 fi
 
 printf "\n~~~~~~ Downloading the client bundle ~~~~~~~\n"
-UCP_URL=$(terraform show | sed -n '/Outputs:/,//p' | grep https | awk -F '"' '{print $2}')
-AUTHTOKEN=$(curl -sk -d '{"username": "admin","password":"dockeradmin"}' ${UCP_URL}/auth/login | jq -r .auth_token)
-curl -k -H "Authorization: Bearer $AUTHTOKEN" ${UCP_URL}/api/clientbundle -o bundle.zip
+UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
+uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+
+AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+curl -k -H "Authorization: Bearer $AUTHTOKEN" https://${UCP_URL}/api/clientbundle -o bundle.zip
 mkdir client-bundle
 unzip bundle.zip -d client-bundle
 cd client-bundle
