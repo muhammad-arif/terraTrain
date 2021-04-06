@@ -3,6 +3,14 @@ variable "region" {
   description = "This is where you have to mention region"
   default = "ap-northeast-1"
 }
+variable "aws_shared_credentials_file" {
+  type = string
+  default = "~/.aws/credentials"
+}
+variable "aws_profile" {
+  type = string
+  default = "PowerUserAccess-043802220583-SSO"
+}
 variable "name" {
   type        = string
   description = "This is the Parent instance type name. \nFor 3 instance it would be like the following,\nIf the name is helios \n1. helios-ucp-leader\n2. helios_instance-0\n3. helios_instance-1"
