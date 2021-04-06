@@ -119,6 +119,9 @@ alias tt-purge="terraform destroy --force -compact-warnings -var-file=/terraTrai
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
 # terraTrain-run function to create a cluster
+tt-plan() {
+    terraform plan -var-file=/terraTrain/config.tfvars
+}
 tt-run() {
 var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 

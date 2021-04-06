@@ -121,3 +121,53 @@ Following fetures will be available on the next release,
 
 
 ### Intermediate usages
+
+#### Enabling AWS Single Sign On 
+Configure your AWS SSO login with following (Host Machine):
+```
+aws configure sso --profile PowerUserAccess-043802220583-SSO
+```
+
+Output of the command:
+
+```
+SSO start URL [None]:https://mirantis.awsapps.com/start
+SSO Region [None]: eu-west-2
+The only AWS account available to you is: 043802220583
+Using the account ID 043802220583
+There are 3 roles available to you.
+Using the role name "PowerUserAccess"
+CLI default client Region [None]:eu-central-1
+CLI default output format [None]:json
+
+To use this profile, specify the profile name using --profile, as shown:
+
+aws s3 ls --profile PowerUserAccess-043802220583-SSO
+```
+
+Sample of the AWS SSO Login.
+```
+aws sso login --profile PowerUserAccess-043802220583-SSO
+```
+Command Output:
+```
+SSO start URL [None]: https://mirantis.awsapps.com/start#/
+SSO Region [None]:  eu-west-2
+Attempting to automatically open the SSO authorization page in your default browser.
+If the browser does not open or you wish to use a different device to authorize this request, open the following URL:
+https://device.sso.eu-west-2.amazonaws.com/
+
+Then enter the code:
+<REDACTED>
+Successully logged into Start URL:
+https://mirantis.awsapps.com/start
+```
+Run following command to get into the terraTrain container,
+```
+docker run -it --volume ~/.aws:/terraTrain/.aws --hostname case-${CASEID} --name case_${CASEID} terratrain:<TAG>
+```
+Check if the credential is working or not
+```
+tt-plan
+```
+
