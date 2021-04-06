@@ -9,8 +9,6 @@ caseNo=""
 ###### Please beware that if you change the region you need to change the ami-id too.
 ###### Let's keep it like this until the next release 
 region="eu-central-1"
-aws_profile="PowerUserAccess-043802220583-SSO"
-aws_shared_credentials_file="~/.aws/credentials"
 
 
 ###### AMI Informations ---------------------------------------------------------------------------------------------------
