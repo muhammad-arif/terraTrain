@@ -214,42 +214,103 @@ cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode
 }
 
 tt-mke-toml() {
-   UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
+    UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
     uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
     pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
     AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
     curl -k -H "Authorization: Bearer $AUTHTOKEN" https://${UCP_URL}/api/ucp/config-toml -o ucp-config.toml
 }
+tt-mke-swrm-svc-deploy() {
+    if [[ -d /terraTrain/client-bundle ]] 
+        then 
+            docker stack deploy -c /terraTrain/dockercoin.yml dockercoin       
+    else 
+        echo "Please run tt-genClientBundle to generate client bundle first" 
+    fi
+}
+tt-mke-k8s-svc-deploy() {
+    if [[ -d /terraTrain/client-bundle ]] 
+        then 
+            kubectl apply -f https://k8s.io/examples/application/mysql/mysql-statefulset.yaml     
+    else 
+        echo "Please run tt-genClientBundle to generate client bundle first" 
+    fi
+}
+tt-mke-rethinkcli() {
+read echoedInput
+UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
+mke_private_ip=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.private_ip' 2>/dev/null)
+ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
+}
 
 tt-msr-rethinkcli() {
+read echoedInput
 msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
-ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr 'exec sudo docker run -it --rm --net dtr-ol -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.2.0  e6e1331b4888'
+ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=e6e1331b4888 -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
 }
 
 tt-msr-login() {
-UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
-uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
-pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
-AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
-msr=$(curl -k -H "Authorization: Bearer $AUTHTOKEN" https://ec2-18-184-218-251.eu-central-1.compute.amazonaws.com/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
-uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
-pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
 if [[ -d /terraTrain/client-bundle ]] 
     then 
     curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
     update-ca-certificates
     docker login $msr -u $uname -p $pass
 else 
-    tt-genClientBundle
-    curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
-    update-ca-certificates
-    docker login $msr -u $uname -p $pass
+    echo "Please run tt-genClientBundle to generate client bundle first" 
 fi
 }
 
 tt-msr-populate-img() {
-msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
+    # Logging to MSR
+    tt-msr-login
 
+    # Enabling create repo on push
+    msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+    # Pulling and pushing images
+    
+    docker pull nginx:alpine
+    docker tag nginx:alpine $msr/$uname/nginx:alpine
+    docker pull nginx:latest
+    docker tag nginx:alpine $msr/$uname/nginx:latest
+    docker push $msr/$uname/nginx --all-tags
+
+    docker pull alpine:3.13.4 
+    docker tag alpine:3.13.4 $msr/$uname/alpine:3.13.4
+    docker pull alpine:latest
+    docker tag alpine:latest $msr/$uname/alpine:latest
+    docker push $msr/$uname/alpine --all-tags
+
+    docker pull redis:alpine3.13
+    docker tag redis:alpine3.13 $msr/$uname/redis:alpine3.13
+    docker pull redis:6.2.1-alpine3.13
+    docker tag redis:6.2.1-alpine3.13 $msr/$uname/redis:6.2.1-alpine3.13
+    docker push $msr/$uname/redis --all-tags
+
+    docker pull busybox:unstable-musl
+    docker tag busybox:unstable-musl $msr/$uname/busybox:unstable-musl
+    docker pull busybox:uclibc    
+    docker tag busybox:uclibc $msr/$uname/busybox:uclibc
+    docker push $msr/$uname/busybox --all-tags
+
+    docker pull hello-world:latest
+    docker tag hello-world:latest $msr/$uname/hello-world:latest
+    docker pull hello-world:linux
+    docker tag hello-world:linux $msr/$uname/hello-world:linux
+    docker push $msr/$uname/hello-world --all-tags
+
+    docker pull haproxy:2.4-dev15-alpine
+    docker tag haproxy:2.4-dev15-alpine $msr/$uname/haproxy:2.4-dev15-alpine
+    docker pull haproxy:2.2.13-alpine
+    docker tag  haproxy:2.2.13-alpine $msr/$uname/haproxy:2.2.13-alpine
+    docker push $msr/$uname/haproxy --all-tags
+
+
+    docker pull alpine/git:latest
+    docker tag alpine/git:latest $msr/$uname/git:latest
+    docker pull alpine/git:v2.30.1
+    docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1
+    docker push $msr/$uname/git --all-tags
 }
 tt-msr-populate-orgs() {
 msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)

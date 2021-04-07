@@ -20,7 +20,12 @@ cd client-bundle
 printf "\n~~~~~~ Activating the client bundle ~~~~~~~\n"
 eval "$(printenv | grep AWS)"
 eval "$(<env.sh)"
+export uname=$uname
+export pass=$pass
+export auth=$AUTHTOKEN
+export ucpurl=$UCP_URL
 cd ..
+
 
 printf "\n~~~~~~ Testing client bundle with kubectl~~~~~~ \n"
 kubectl get nodes || ( printf "Not working. May be credential issue" && exit 1 )
