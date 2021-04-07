@@ -18,9 +18,8 @@ resource "random_pet" "mke_username" {
   length  = 2
 }
 resource "random_string" "mke_password" {
-  length  = 12
-  special = true
-  override_special = "/()"
+  length  = 20
+  special = false
 }
 # Creating a local variable for generating randomness
 locals {

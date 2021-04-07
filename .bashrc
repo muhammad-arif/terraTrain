@@ -246,7 +246,7 @@ ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserNa
 tt-msr-rethinkcli() {
 read echoedInput
 msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
-ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=e6e1331b4888 -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
+ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=e6e1331b4888 -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.3.0-ni non-interactive " | jq
 }
 
 tt-msr-login() {
