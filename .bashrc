@@ -110,6 +110,17 @@ if ! shopt -oq posix; then
     . /etc/bash_completion
   fi
 fi
+
+#####################################################################################################################################################################
+#####################################################################################################################################################################
+#####################################################################################################################################################################
+die () {
+# Function for exiting with erorr
+  ret=$?
+  printf "\n$1\n"
+  exit "$ret"
+}
+
 source /terraTrain/config.tfvars
 complete -C /usr/bin/terraform terraform
 alias d="docker"
@@ -137,15 +148,15 @@ terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warni
 #    mke_username=$(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n")
 #
 #    if (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'ubuntu' )) ; then 
-#    ssh -i key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/cloud-init-output.log"   
+#    ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/cloud-init-output.log"   
 #
 #    elif (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'ec2-user' )) ; then
 #    # redhat 7 put all the cloud-init logs inside messages where redhat 8 uses cloud-init-output.log file
-#    ssh -i key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "if [ ! -f /var/log/cloud-init-output.log ] ; then sudo tail -f /var/log/messages | grep cloud-init; else sudo tail -f /var/log/cloud-init-output.log; fi"
+#    ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "if [ ! -f /var/log/cloud-init-output.log ] ; then sudo tail -f /var/log/messages | grep cloud-init; else sudo tail -f /var/log/cloud-init-output.log; fi"
 #    
 #    elif (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'centos' )) ; then
 #    mke=$(cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
-#    ssh -i key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/messages | grep cloud-init"   
+#    ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/messages | grep cloud-init"   
 #
 #    else
 #        echo "My bad. Can't detect the os"
@@ -240,13 +251,13 @@ tt-mke-rethinkcli() {
 read echoedInput
 UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
 mke_private_ip=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.private_ip' 2>/dev/null)
-ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
+ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
 }
 
 tt-msr-rethinkcli() {
 read echoedInput
 msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
-ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=e6e1331b4888 -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.3.0-ni non-interactive " | jq
+ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=e6e1331b4888 -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
 }
 
 tt-msr-login() {
@@ -263,54 +274,59 @@ fi
 
 tt-msr-populate-img() {
     # Logging to MSR
-    tt-msr-login
-
-    # Enabling create repo on push
     msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+    if [[ -d /terraTrain/client-bundle ]] 
+        then 
+            curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
+            update-ca-certificates
+            docker login $msr -u $uname -p $pass
+    else 
+        echo "Please run tt-genClientBundle to generate the client bundle first" 
+    fi
     # Pulling and pushing images
     
-    docker pull nginx:alpine
+    docker pull nginx:alpine > /dev/null || die "Cannot pull image"
     docker tag nginx:alpine $msr/$uname/nginx:alpine
-    docker pull nginx:latest
+    docker pull nginx:latest > /dev/null || die "Cannot pull image"
     docker tag nginx:alpine $msr/$uname/nginx:latest
-    docker push $msr/$uname/nginx --all-tags
+    docker push $msr/$uname/nginx --all-tags || die 
 
     docker pull alpine:3.13.4 
     docker tag alpine:3.13.4 $msr/$uname/alpine:3.13.4
     docker pull alpine:latest
     docker tag alpine:latest $msr/$uname/alpine:latest
-    docker push $msr/$uname/alpine --all-tags
+    docker push $msr/$uname/alpine --all-tags || die 
 
-    docker pull redis:alpine3.13
+    docker pull redis:alpine3.13 > /dev/null || die "Cannot pull image"
     docker tag redis:alpine3.13 $msr/$uname/redis:alpine3.13
-    docker pull redis:6.2.1-alpine3.13
+    docker pull redis:6.2.1-alpine3.13 > /dev/null || die "Cannot pull image"
     docker tag redis:6.2.1-alpine3.13 $msr/$uname/redis:6.2.1-alpine3.13
-    docker push $msr/$uname/redis --all-tags
+    docker push $msr/$uname/redis --all-tags || die 
 
-    docker pull busybox:unstable-musl
+    docker pull busybox:unstable-musl > /dev/null || die "Cannot pull image" 
     docker tag busybox:unstable-musl $msr/$uname/busybox:unstable-musl
-    docker pull busybox:uclibc    
+    docker pull busybox:uclibc    > /dev/null || die "Cannot pull image"
     docker tag busybox:uclibc $msr/$uname/busybox:uclibc
-    docker push $msr/$uname/busybox --all-tags
+    docker push $msr/$uname/busybox --all-tags || die 
 
-    docker pull hello-world:latest
+    docker pull hello-world:latest > /dev/null || die "Cannot pull image"
     docker tag hello-world:latest $msr/$uname/hello-world:latest
-    docker pull hello-world:linux
+    docker pull hello-world:linux > /dev/null || die "Cannot pull image"
     docker tag hello-world:linux $msr/$uname/hello-world:linux
-    docker push $msr/$uname/hello-world --all-tags
-
-    docker pull haproxy:2.4-dev15-alpine
+    docker push $msr/$uname/hello-world --all-tags || die 
+    
+    docker pull haproxy:2.4-dev15-alpine > /dev/null || die "Cannot pull image"
     docker tag haproxy:2.4-dev15-alpine $msr/$uname/haproxy:2.4-dev15-alpine
-    docker pull haproxy:2.2.13-alpine
+    docker pull haproxy:2.2.13-alpine > /dev/null || die "Cannot pull image"
     docker tag  haproxy:2.2.13-alpine $msr/$uname/haproxy:2.2.13-alpine
-    docker push $msr/$uname/haproxy --all-tags
+    docker push $msr/$uname/haproxy --all-tags || die
 
 
-    docker pull alpine/git:latest
+    docker pull alpine/git:latest > /dev/null || die "Cannot pull image"
     docker tag alpine/git:latest $msr/$uname/git:latest
-    docker pull alpine/git:v2.30.1
+    docker pull alpine/git:v2.30.1 > /dev/null || die "Cannot pull image"
     docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1
-    docker push $msr/$uname/git --all-tags
+    docker push $msr/$uname/git --all-tags || die
 }
 tt-msr-populate-orgs() {
 msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
@@ -319,5 +335,5 @@ msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="d
 
 # Connect function to ssh into a machine
 connect() {
-ssh -i ./key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $1 "$2"
+ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $1 "$2"
 }
