@@ -148,11 +148,11 @@ echo "You can always find the installation logs at /tmp/mke-installation.log"
 read input
 if (( "$input" == 'y' || "$input" == 'Y' )) ; then
     /terraTrain/configGenerator.sh
-    nohup terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+    nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
     tail -f /tmp/mke-installation.log
 else 
     /terraTrain/configGenerator.sh
-    nohup terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+    nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
 fi
 tt-show
 }
