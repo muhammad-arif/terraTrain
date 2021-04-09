@@ -127,59 +127,52 @@ alias d="docker"
 alias k="kubectl"
 alias k-n-kubesystem="kubectl -n kube-system"
 alias tt-purge="terraform destroy --force -compact-warnings -var-file=/terraTrain/config.tfvars"
+alias tt-uninstall="/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml"
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
 # terraTrain-run function to create a cluster
 tt-plan() {
     terraform plan -var-file=/terraTrain/config.tfvars
 }
+
 tt-run() {
 var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
 terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings
-#echo "Yey! All of the instance were created by MKE installation is still in progress."
-#echo "Do you want to see MKE installation logs?"
-#echo "Press y to see the logs and press any other key to ignore"
-#echo "You can close this log watching session with ctrl+c"
 
-#read input
-#if (( "$input" == 'y' || "$input" == 'Y' )) ; then
-#    mke=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
-#    mke_username=$(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n")
-#
-#    if (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'ubuntu' )) ; then 
-#    ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/cloud-init-output.log"   
-#
-#    elif (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'ec2-user' )) ; then
-#    # redhat 7 put all the cloud-init logs inside messages where redhat 8 uses cloud-init-output.log file
-#    ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "if [ ! -f /var/log/cloud-init-output.log ] ; then sudo tail -f /var/log/messages | grep cloud-init; else sudo tail -f /var/log/cloud-init-output.log; fi"
-#    
-#    elif (( $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") == 'centos' )) ; then
-#    mke=$(cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
-#    ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l ${mke_username} ${mke} "sudo tail -f /var/log/messages | grep cloud-init"   
-#
-#    else
-#        echo "My bad. Can't detect the os"
-#    fi
-#else
-#    exit 0
-#fi
+
+echo "Do you want to see MKE installation logs?"
+echo "Press y to see the logs and press any other key to ignore."
+echo "You can always find the installation logs at /tmp/mke-installation.log"
+
+read input
+if (( "$input" == 'y' || "$input" == 'Y' )) ; then
+    /terraTrain/configGenerator.sh
+    nohup terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+    tail -f /tmp/mke-installation.log
+else 
+    /terraTrain/configGenerator.sh
+    nohup terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+fi
 tt-show
 }
 
 
 # terraTrain-show function to list the cluster details (more efficient than terraform binary) [time of execution: real	0m0.021s, user	0m0.019s, sys	0m0.005s ]
-tt-show() {
-printf "\n\n MKE's Username and Password: \n"
+tt-show-clusterInfo() {
+printf "\n MKE and MSR Information: \n"
 echo "-------------------------------------------------------------------------------"
+printf  '\e[1;34m%-6s\e[m' "MKR URL: "
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | ("https://" + .attributes.public_dns)' 2>/dev/null
+printf  '\e[1;34m%-6s\e[m' "MKR URL: "
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | ("https://" + .attributes.public_dns)' 2>/dev/null
 printf '\e[1;34m%-6s\e[m' "Username: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
 printf  '\e[1;34m%-6s\e[m' "Password: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
+}
 
-printf "\n\n Leader Node: \n"
-echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+tt-show-nodesInfo(){
 printf "\n\n Manager Nodes: \n"
 echo "-------------------------------------------------------------------------------"
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
@@ -190,6 +183,12 @@ printf "\n\n Worker Nodes: \n"
 echo "-------------------------------------------------------------------------------"
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
+
+tt-show() {
+tt-show-clusterInfo
+tt-show-nodesInfo
+}
+
 tt-show-mke-creds() {
 printf "\n\n MKE's Username and Password: \n"
 echo "-------------------------------------------------------------------------------"
@@ -198,16 +197,19 @@ cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_userna
 printf '\e[1;34m%-6s\e[m' "Password: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
 }
-tt-show-ldr() {
-printf "\n\n Leader Node: \n"
-echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
-printf '\e[1;34m%-6s\e[m' "Username: "
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
-printf '\e[1;34m%-6s\e[m' "Password: "
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
 
-}
+
+
+#tt-show-ldr() {
+#printf "\n\n Leader Node: \n"
+#echo "-------------------------------------------------------------------------------"
+#cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="ucp-leader") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+#printf '\e[1;34m%-6s\e[m' "Username: "
+#cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
+#printf '\e[1;34m%-6s\e[m' "Password: "
+#cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
+#
+#}
 tt-show-mgr() {
 printf "\n\n Manager Nodes: \n"
 echo "-------------------------------------------------------------------------------"
@@ -225,7 +227,7 @@ cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode
 }
 
 tt-mke-toml() {
-    UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
+    UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
     uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
     pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
     AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
@@ -249,14 +251,14 @@ tt-mke-k8s-svc-deploy() {
 }
 tt-mke-rethinkcli() {
 read echoedInput
-UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.public_dns' 2>/dev/null)
-mke_private_ip=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="ucp-leader") | .instances[] | .attributes.private_ip' 2>/dev/null)
+UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
+mke_private_ip=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.private_ip' 2>/dev/null)
 ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
 }
 
 tt-msr-rethinkcli() {
 read echoedInput
-msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
+msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
 ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=e6e1331b4888 -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
 }
 
@@ -327,10 +329,6 @@ tt-msr-populate-img() {
     docker pull alpine/git:v2.30.1 > /dev/null || die "Cannot pull image"
     docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1
     docker push $msr/$uname/git --all-tags || die
-}
-tt-msr-populate-orgs() {
-msr=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | .attributes.public_dns' 2>/dev/null | head -n 1)
-
 }
 
 # Connect function to ssh into a machine

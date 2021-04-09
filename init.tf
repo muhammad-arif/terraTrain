@@ -81,44 +81,45 @@ variable "docker_dtr_version" {
   description = "Please type your desired DTR version"
 }
 
-#### WORKER INSTALLATION CONFIG ####
-data "template_file" "worker_file" {
-  template = file("install_docke-ee.tpl")
-  vars = {
-      dockerURL = "${var.docker_ee_url}"
-      dockerVERSION = "${var.docker_ee_version}"
-  }
-}
-
-data "template_cloudinit_config" "replicas" {
-  gzip          = false
-  base64_encode = false  #first part of local config file
-  part {
-    content_type = "text/x-shellscript"
-    content      = data.template_file.worker_file.rendered
-  }
-}
-
-#### UCP INSTALLATION CONFIG ####
-data "template_file" "ucp_file" {
-  template = file("install_ucp.tpl")
-  vars = {
-      dockerURL = "${var.docker_ee_url}"
-      dockerVERSION = "${var.docker_ee_version}"
-      ucpVERSION = "${var.docker_ucp_version}"
-      ucpAdminName = "${random_pet.mke_username.id}"
-      ucpAdminPass = "${random_string.mke_password.result}"
-      amiUSERNAME = "${var.amiUserName}"
-      dtrVERSION = "${var.docker_dtr_version}"
-      mkeREPOSITORY = "${var.mke_repo}"
-
-  }
-}
-data "template_cloudinit_config" "ucp" {
-  gzip          = false
-  base64_encode = false  #first part of local config file
-  part {
-    content_type = "text/x-shellscript"
-    content      = data.template_file.ucp_file.rendered
-  }
-}
+##### WORKER INSTALLATION CONFIG ####
+#data "template_file" "worker_file" {
+#  template = file("install_docke-ee.tpl")
+#  vars = {
+#      dockerURL = "${var.docker_ee_url}"
+#      dockerVERSION = "${var.docker_ee_version}"
+#  }
+#}
+#
+#data "template_cloudinit_config" "replicas" {
+#  gzip          = false
+#  base64_encode = false  #first part of local config file
+#  part {
+#    content_type = "text/x-shellscript"
+#    content      = data.template_file.worker_file.rendered
+#  }
+#}
+#
+##### UCP INSTALLATION CONFIG ####
+#data "template_file" "ucp_file" {
+#  template = file("install_ucp.tpl")
+#  vars = {
+#      dockerURL = "${var.docker_ee_url}"
+#      dockerVERSION = "${var.docker_ee_version}"
+#      ucpVERSION = "${var.docker_ucp_version}"
+#      ucpAdminName = "${random_pet.mke_username.id}"
+#      ucpAdminPass = "${random_string.mke_password.result}"
+#      amiUSERNAME = "${var.amiUserName}"
+#      dtrVERSION = "${var.docker_dtr_version}"
+#      mkeREPOSITORY = "${var.mke_repo}"
+#
+#  }
+#}
+#data "template_cloudinit_config" "ucp" {
+#  gzip          = false
+#  base64_encode = false  #first part of local config file
+#  part {
+#    content_type = "text/x-shellscript"
+#    content      = data.template_file.ucp_file.rendered
+#  }
+#}
+#
