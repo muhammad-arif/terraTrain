@@ -1,13 +1,5 @@
-###### Configuration File #######
-# JUST UNCOMMENT WHAT YOU NEED and COMMENT WHAT YOU DON'T
-
-###### Test Information
 name="YOURNAME-caseNo"
 caseNo=""
-
-###### AWS Informations
-###### Please beware that if you change the region you need to change the ami-id too.
-###### Let's keep it like this until the next release 
 region="eu-central-1"
 
 
@@ -29,13 +21,8 @@ amiUserName="ubuntu"
 #amiUserName="ec2-user" 
 #amiUserName="centos" 
 
-#---------------------------------------------------------------------------------------------------------------------------
-
-###### UCP Informations ----------------------------------------------------------------------------------------------------
-ucpInstanceType="c4.xlarge"
 
 ###### Managers Informations
-###### There would be 1 leader always. So if you type 2 in managerCount there would be 3 manager in total
 managerCount="2"
 managerInstanceType="c4.xlarge"
 
@@ -50,7 +37,7 @@ dtrInstanceType="c4.xlarge"
 
 
 ###### MKE Information ----------------------------------------------------------------------------------------------------- 
-docker_ee_version="19.03" # E.g. 18.09.1, 19.03.11, 19.03 - will install the latest of 19.03 which is 14 at this moment
+docker_ee_version="19.03.14" # E.g. 18.09.1, 19.03.11, 19.03 - will install the latest of 19.03 which is 14 at this moment
 docker_ucp_version="3.3.4"
 docker_dtr_version="2.8.2"
 

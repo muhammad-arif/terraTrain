@@ -39,10 +39,6 @@ variable "amiUserName" {
   type        = string
   description = "This is the AMI username. For ubuntu it's ubuntu, for centos it's centos etc."
 }
-variable "ucpInstanceType" {
-  type        = string
-  description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
-}
 variable "dtrInstanceType" {
   type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"

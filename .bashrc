@@ -138,7 +138,7 @@ tt-plan() {
 tt-run() {
 var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
-terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings
+terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings || die "Wasn't able to create the instances. Check the Credential Keys again, please."
 
 
 echo "Do you want to see MKE installation logs?"
