@@ -1,8 +1,8 @@
 # AWS Info
-region="eu-central-1"           # choose your region
+region=""           # choose your region
 name=""                         # yourname-caseno
 caseNo=""                       # you can specify yoru case no here. Later you can find it by case no
-os_name="ubuntu"                      # use "ubuntu" or "suse" or "redhat" or "centos"
+os_name=""                      # use "ubuntu" or  "redhat" or "centos"
 os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
 
 # MKE MSR MCR info
@@ -11,7 +11,7 @@ mke_version="3.3.4"             # MKE Version
 msr_version="2.8.2"             # MSR Version
 
 # Managers Info
-manager_count="2"
+manager_count="3"
 manager_instance_type="c4.xlarge"
 
 # Workers Infor
@@ -19,7 +19,7 @@ worker_count="3"
 worker_instance_type="t2.micro"
 
 # MSR  Info
-msr_count="1"
+msr_count="3"
 msr_instance_type="c4.xlarge"
 
 image_repo="docker.io/mirantis" #For older version use docker.io/docker

@@ -148,32 +148,30 @@ then
   amiUserName="ubuntu"
 elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
 then
-  amiUserName="ec2-user"
+  export amiUserName="ec2-user"
 elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
 then
-  amiUserName="centos"
+  export amiUserName="centos"
 elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
 then
-  amiUserName="ec2-user"
+  export amiUserName="ec2-user" 
 else
-  echo "wrong Operating System Name"
+  echo "wrong Operating System Name" && die
 fi
-printf "\amiUserName=\"$amiUserName\"" >> /terraTrain/config.tfvars
 
 echo "Do you want to see MKE installation logs?"
 echo "Press y to see the logs and press any other key to ignore."
 echo "You can always find the installation logs at /tmp/mke-installation.log"
 
 read input
+/terraTrain/configGenerator.sh
+nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+
 if (( "$input" == 'y' || "$input" == 'Y' )) ; then
-    /terraTrain/configGenerator.sh
-    nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
-    ( tail -f -n0 /tmp/mke-installation.log  & ) | grep -q "INFO Cluster is now configured."
-else 
-    /terraTrain/configGenerator.sh
-    nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+    tail -f -c+10 /tmp/mke-installation.log | sed '/^INFO Cluster is now configured./q'
+else
+    tt-show
 fi
-tt-show
 }
 
 
@@ -278,7 +276,7 @@ connect $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=
 tt-msr-rethinkcli() {
 read echoedInput
 msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
-ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=e6e1331b4888 -v dtr-ca-e6e1331b4888:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
+ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000001 -v dtr-ca-000000000001:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
 }
 
 tt-msr-login() {
