@@ -2,8 +2,23 @@
 
 # Sourcing config.tfvars
 . /terraTrain/config.tfvars
+if [[ $os_name == "ubuntu" ]] 
+then
+  amiUserName="ubuntu"
+elif [[ $os_name == "redhat" ]] 
+then
+  amiUserName="ec2-user"
+elif [[ $os_name == "centos" ]] 
+then
+  amiUserName="centos"
+elif [[ $os_name == "suse" ]] 
+then
+  amiUserName="ec2-user"
+else
+  echo "wrong Operating System Name"
+fi
 
-if [[ $dtrCount != 0 ]]
+if [[ $msr_count != 0 ]]
   then
     ####### Generating Launchpad Metadata Configuration
     cat > launchpad.yaml << EOL
@@ -15,9 +30,9 @@ spec:
   hosts:
 EOL
     ####### Generating Manager Node Configuration
-    if [[ $managerCount != 0 ]]
+    if [[ $manager_count != 0 ]]
       then
-        for count in $(seq $managerCount)
+        for count in $(seq $manager_count)
             do 
                 index=`expr $count - 1` #because index_key starts with 0
                 mgr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
@@ -44,8 +59,8 @@ EOL
         done
     else
     ### For minimum 1 Manager 
-      managerCount=1
-      for count in $(seq $managerCount)
+      manager_count=1
+      for count in $(seq $manager_count)
             do 
                 index=`expr $count - 1` #because index_key starts with 0
                 mgr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
@@ -73,9 +88,9 @@ EOL
     fi
 
     ####### Generating Worker Node Configuration
-    if [[ $workerCount != 0 ]]
+    if [[ $worker_count != 0 ]]
         then
-            for count in $(seq $workerCount)
+            for count in $(seq $worker_count)
             do 
                 index=`expr $count - 1` #because index_key starts with 0
                 wkr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
@@ -91,7 +106,7 @@ EOL
     fi
     ####### Generating MSR Node Configuration
     
-    for count in $(seq $dtrCount)
+    for count in $(seq $msr_count)
             do 
                 index=`expr $count - 1` #because index_key starts with 0
                 msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="dtrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
@@ -110,7 +125,7 @@ EOL
     mkeadminPassword=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.id' 2>/dev/null)                
     cat >> launchpad.yaml << EOL
   mke:
-    version: $docker_ucp_version
+    version: $mke_version
     imageRepo: "docker.io/mirantis"
     adminUsername: $mkeadminUsername
     adminPassword: $mkeadminPassword
@@ -120,7 +135,7 @@ EOL
     msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
     cat >> launchpad.yaml << EOL
   msr:
-    version: $docker_dtr_version
+    version: $msr_version
     imageRepo: "docker.io/mirantis"
     installFlags:
     - --dtr-external-url $msr_address
@@ -131,7 +146,7 @@ EOL
     ####### Generating MCR Configuration
     cat >> launchpad.yaml << EOL
   mcr:
-    version: $docker_ee_version
+    version: $mcr_version
     channel: stable
     repoURL: https://repos.mirantis.com
     installURLLinux: https://get.mirantis.com/
@@ -151,7 +166,7 @@ spec:
   hosts:
 EOL
     ####### Generating Manager Node Configuration
-    for count in $(seq $managerCount)
+    for count in $(seq $manager_count)
         do 
             index=`expr $count - 1` #because index_key starts with 0
             mgr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
@@ -179,9 +194,9 @@ EOL
 
 
     ####### Generating Worker Node Configuration
-    if [[ $workerCount != 0 ]]
+    if [[ $worker_count != 0 ]]
         then
-            for count in $(seq $workerCount)
+            for count in $(seq $worker_count)
             do 
                 index=`expr $count - 1` #because index_key starts with 0
                 wkr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
@@ -201,7 +216,7 @@ EOL
     mkeadminPassword=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.id' 2>/dev/null)                
     cat >> launchpad.yaml << EOL
   mke:
-    version: $docker_ucp_version
+    version: $mke_version
     imageRepo: "docker.io/mirantis"
     adminUsername: $mkeadminUsername
     adminPassword: $mkeadminPassword
@@ -210,7 +225,7 @@ EOL
     ####### Generating MCR Configuration
     cat >> launchpad.yaml << EOL
   mcr:
-    version: $docker_ee_version
+    version: $mcr_version
     channel: stable
     repoURL: https://repos.mirantis.com
     installURLLinux: https://get.mirantis.com/

@@ -1,46 +1,28 @@
-name="YOURNAME-caseNo"
-caseNo=""
-region="eu-central-1"
+# AWS Info
+region="eu-central-1"           # choose your region
+name=""                         # yourname-caseno
+caseNo=""                       # you can specify yoru case no here. Later you can find it by case no
+os_name="ubuntu"                      # use "ubuntu" or "suse" or "redhat" or "centos"
+os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
 
+# MKE MSR MCR info
+mcr_version="19.03.14"          # Please use specific minor engine version.
+mke_version="3.3.4"             # MKE Version
+msr_version="2.8.2"             # MSR Version
 
-###### AMI Informations ---------------------------------------------------------------------------------------------------
-###### From AWS dashboard select your region. And from Services select EC2. and from the Left bar select AMIs
-###### Then search your desired AMI's and change the following AMI ID. Followings only work for eu-central-1 region 
-###### At this moment only the following AMIs are supported. Change/add them at your own risk
-#ami="ami-009b16df9fcaac611"        # RedHat 8(latest)
-#ami="ami-0f58468b80db2db66"	    # RedHat 7.9
-#ami="ami-06c0e8e713058d7be"        # RedHat 7.8  
-#ami="ami-0e8286b71b81c3cc1"        # Centos 7
-#ami="ami-0f86cdae67e730b21"        # Ubuntu 16.04 
-ami="ami-0e1ce3e0deb8896d2"		 # Ubuntu 18.04 
+# Managers Info
+manager_count="2"
+manager_instance_type="c4.xlarge"
 
-###### For Ubuntu ami username should be ubuntu,
-###### For RHEL or SLES ami username should be ec2-user, 
-###### For Centos ami username should be centos. Uncomment only what you need
-amiUserName="ubuntu" 
-#amiUserName="ec2-user" 
-#amiUserName="centos" 
+# Workers Infor
+worker_count="3"
+worker_instance_type="t2.micro"
 
+# MSR  Info
+msr_count="1"
+msr_instance_type="c4.xlarge"
 
-###### Managers Informations
-managerCount="2"
-managerInstanceType="c4.xlarge"
-
-###### Workers Informations
-workerCount="3"
-workerInstanceType="t2.micro"
-
-###### MSR  Informations
-dtrCount="1"
-dtrInstanceType="c4.xlarge"
-# --------------------------------------------------------------------------------------------------------------------------
-
-
-###### MKE Information ----------------------------------------------------------------------------------------------------- 
-docker_ee_version="19.03.14" # E.g. 18.09.1, 19.03.11, 19.03 - will install the latest of 19.03 which is 14 at this moment
-docker_ucp_version="3.3.4"
-docker_dtr_version="2.8.2"
-
+image_repo="docker.io/mirantis" #For older version use docker.io/docker
 #---------------------------------------------------------------------------------------------------------------------------
 # Check Again Please
 

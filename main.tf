@@ -73,9 +73,9 @@ resource "aws_key_pair" "deployer" {
 ######## CREATING THE WORKER INSTANCE #######
 
 resource "aws_instance" "workerNode" {
-  count = "${var.workerCount}"
-  ami = var.ami
-  instance_type = var.workerInstanceType
+  count = "${var.worker_count}"
+  ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
+  instance_type = var.worker_instance_type
   key_name = "${var.name}-deployer-key"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
@@ -92,9 +92,9 @@ resource "aws_instance" "workerNode" {
 ######## CREATING THE MANAGER INSTANCE #######
 
 resource "aws_instance" "managerNode" {
-  count = "${var.managerCount}"
-  ami = var.ami
-  instance_type = var.managerInstanceType
+  count = "${var.manager_count}"
+  ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
+  instance_type = var.manager_instance_type
   key_name = "${var.name}-deployer-key"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
@@ -114,9 +114,9 @@ resource "aws_instance" "managerNode" {
 ######## CREATING THE MSR INSTANCE #######
 
 resource "aws_instance" "dtrNode" {
-  count = "${var.dtrCount}"
-  ami = var.ami
-  instance_type = var.dtrInstanceType
+  count = "${var.msr_count}"
+  ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
+  instance_type = var.msr_instance_type
   key_name = "${var.name}-deployer-key"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
@@ -135,3 +135,82 @@ resource "aws_instance" "dtrNode" {
 
   }
 }
+
+######### AMI SEARCH #########
+data "aws_ami" "ubuntu" {
+    owners = ["099720109477"]
+    count  = "${ var.os_name == "ubuntu" ? 1 : 0}"
+    most_recent = true
+    filter {
+        name = "name"
+        values = ["ubuntu/images/hvm-ssd/ubuntu-*-${var.os_version}*amd64*"]
+    }
+    filter {
+        name = "architecture"
+        values = ["x86_64"]
+    }
+    
+    filter {
+        name = "description"
+        values = ["Canonical, Ubuntu, *"]
+    }
+}
+data "aws_ami" "redhat" {
+    count  = "${ var.os_name == "redhat" ? 1 : 0}"
+    owners = ["309956199498"]
+    most_recent = true
+
+    filter {
+        name = "name"
+        values = ["RHEL-${var.os_version}*-x86_64*"]
+   }
+   filter {
+        name = "architecture"
+        values = ["x86_64"]
+    }
+    
+    filter {
+        name = "description"
+        values = ["Provided by Red Hat, Inc."]
+    }
+}
+data "aws_ami" "centos" {
+    count  = "${var.os_name == "centos" ? 1 : 0}"
+    owners = ["125523088429"]
+    most_recent = true
+    filter {
+        name = "name"
+        values = ["CentOS*${var.os_version}*x86_64"]
+    }
+    filter {
+        name = "architecture"
+        values = ["x86_64"]
+    }
+    
+    filter {
+        name = "description"
+        values = ["CentOS*"]
+    }
+}
+data "aws_ami" "suse" {
+    count  = "${var.os_name == "suse" ? 1 : 0}"
+    owners = ["amazon"]
+    most_recent = true
+    filter {
+        name = "name"
+        values = ["suse-sles-${var.os_version}-sp*-v????????-hvm-ssd-x86_64"]
+    }
+    #filter {
+    #    name = "virtualization_type"
+    #    values = ["hvm"]
+    #}
+    filter {
+        name = "architecture"
+        values = ["x86_64"]
+    }
+    
+    filter {
+        name = "description"
+        values = ["SUSE Linux Enterprise Server*"]
+    }
+}    

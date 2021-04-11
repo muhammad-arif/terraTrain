@@ -1,7 +1,7 @@
 variable "region" {
   type        = string
   description = "This is where you have to mention region"
-  default = "ap-northeast-1"
+  default = "eu-central-1"
 }
 variable "aws_shared_credentials_file" {
   type = string
@@ -19,103 +19,70 @@ variable "caseNo" {
   type        = string
   description = "This is the case number to track the issue."
 }
-variable "workerCount" {
+variable "os_name" {
+  type        = string
+  description = "Please type os name like the following, \nubuntu\nredhat\ncentos\nsuse"
+  default = "ubuntu"
+}
+variable "os_version" {
+  type        = string
+  description = "Please type os Version. For ubuntu 16.04,18,04 etc. For redhat 7.8, 7.1, 8.1 etc"
+  default = "18.04"
+}
+variable "worker_count" {
   type        = string
   description = "Please type the total number of worker"
+  default = 3
 }
-variable "managerCount" {
+variable "manager_count" {
   type        = string
   description = "Please type the total number of manager"
+  default = 3
 }
-variable "dtrCount" {
+variable "msr_count" {
   type        = string
   description = "Please type the total number of dtr"
+  default = 3
 }
-variable "ami" {
-  type        = string
-  description = "Please type which AMI you want. \n1. ami-02b658ac34935766f : Ubuntu Server 18.04 LTS (HVM) \n2. ami-0ce107ae7af2e92b5 : Amazon Linux 2 \n3. ami-07dd14faa8a17fb3e : Red Hat Enterprise Linux 8 (HVM)\n4. ami-0119d7d47f3b13adb : SUSE Linux Enterprise Server 15 SP2\n5. ami-09b86f9709b3c33d4 : Ubuntu Server 20.04 LTS (HVM)\n"
-}
-variable "amiUserName" {
-  type        = string
-  description = "This is the AMI username. For ubuntu it's ubuntu, for centos it's centos etc."
-}
-variable "dtrInstanceType" {
+#variable "amiUserName" {
+#  type        = string
+#  description = "This is the AMI username. For ubuntu it's ubuntu, for centos it's centos etc."
+#  default = "${ var.os_name == "ubuntu" ? "ubuntu" : (var.os_name == "redhat" ? "ec2-user" : (var.os_name == "centos" ? "centos" : "ec2-user" ))}"
+#}
+variable "msr_instance_type" {
   type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
+  default = "c4.xlarge"
 }
-variable "workerInstanceType" {
+variable "worker_instance_type" {
   type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
+  default = "t2.micro"
 }
-variable "managerInstanceType" {
+variable "manager_instance_type" {
   type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
+  default = "c4.xlarge"
 }
 variable "publicKey" {
   type        = string
   description = "If you are using a customized key, please paste your public key here."
 }
-
-variable "docker_ee_url" {
+variable "image_repo" {
   type        = string
-  default = "https://repos.mirantis.com"
+  default = "docker.io/mirantis"
 }
-variable "mke_repo" {
+variable "mcr_version" {
   type        = string
-  default = "mirantis/ucp"
+  description = "Please type your desired Mirantis Container Runtime version"
+  default = "19.03.14"
 }
-variable "docker_ee_version" {
+variable "mke_version" {
   type        = string
-  default = "19.03"
+  description = "Please type your desired Mirantis Kubernetes Engine version"
+  default = "3.3.7"
 }
-variable "docker_ucp_version" {
+variable "msr_version" {
   type        = string
-  description = "Please type your desired docker version"
+  description = "Please type your desired Mirantis Secure Registry version"
 }
-variable "docker_dtr_version" {
-  type        = string
-  description = "Please type your desired DTR version"
-}
-
-##### WORKER INSTALLATION CONFIG ####
-#data "template_file" "worker_file" {
-#  template = file("install_docke-ee.tpl")
-#  vars = {
-#      dockerURL = "${var.docker_ee_url}"
-#      dockerVERSION = "${var.docker_ee_version}"
-#  }
-#}
-#
-#data "template_cloudinit_config" "replicas" {
-#  gzip          = false
-#  base64_encode = false  #first part of local config file
-#  part {
-#    content_type = "text/x-shellscript"
-#    content      = data.template_file.worker_file.rendered
-#  }
-#}
-#
-##### UCP INSTALLATION CONFIG ####
-#data "template_file" "ucp_file" {
-#  template = file("install_ucp.tpl")
-#  vars = {
-#      dockerURL = "${var.docker_ee_url}"
-#      dockerVERSION = "${var.docker_ee_version}"
-#      ucpVERSION = "${var.docker_ucp_version}"
-#      ucpAdminName = "${random_pet.mke_username.id}"
-#      ucpAdminPass = "${random_string.mke_password.result}"
-#      amiUSERNAME = "${var.amiUserName}"
-#      dtrVERSION = "${var.docker_dtr_version}"
-#      mkeREPOSITORY = "${var.mke_repo}"
-#
-#  }
-#}
-#data "template_cloudinit_config" "ucp" {
-#  gzip          = false
-#  base64_encode = false  #first part of local config file
-#  part {
-#    content_type = "text/x-shellscript"
-#    content      = data.template_file.ucp_file.rendered
-#  }
-#}
-#

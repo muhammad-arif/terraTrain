@@ -126,7 +126,6 @@ complete -C /usr/bin/terraform terraform
 alias d="docker"
 alias k="kubectl"
 alias k-n-kubesystem="kubectl -n kube-system"
-alias tt-purge="terraform destroy --force -compact-warnings -var-file=/terraTrain/config.tfvars"
 alias tt-uninstall="/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml"
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
@@ -134,12 +133,32 @@ alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 tt-plan() {
     terraform plan -var-file=/terraTrain/config.tfvars
 }
-
+tt-purge(){
+terraform destroy --force -compact-warnings -var-file=/terraTrain/config.tfvars
+echo " " > /terraTrain/launchpad.yaml
+}
 tt-run() {
 var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
-terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings || die "Wasn't able to create the instances. Check the Credential Keys again, please."
+terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings || die "Wasn't able to create the instances. Check the AWS Credential Keys or the errors again, please."
+#Exporting AMI name for global reachability
 
+if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+then
+  amiUserName="ubuntu"
+elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+then
+  amiUserName="ec2-user"
+elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+then
+  amiUserName="centos"
+elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+then
+  amiUserName="ec2-user"
+else
+  echo "wrong Operating System Name"
+fi
+printf "\amiUserName=\"$amiUserName\"" >> /terraTrain/config.tfvars
 
 echo "Do you want to see MKE installation logs?"
 echo "Press y to see the logs and press any other key to ignore."
@@ -149,7 +168,7 @@ read input
 if (( "$input" == 'y' || "$input" == 'Y' )) ; then
     /terraTrain/configGenerator.sh
     nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
-    tail -f /tmp/mke-installation.log
+    ( tail -f -n0 /tmp/mke-installation.log  & ) | grep -q "INFO Cluster is now configured."
 else 
     /terraTrain/configGenerator.sh
     nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
@@ -253,7 +272,7 @@ tt-mke-rethinkcli() {
 read echoedInput
 UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
 mke_private_ip=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.private_ip' 2>/dev/null)
-ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
+connect $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
 }
 
 tt-msr-rethinkcli() {
@@ -333,5 +352,22 @@ tt-msr-populate-img() {
 
 # Connect function to ssh into a machine
 connect() {
-ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $(awk -F= -v key="amiUserName" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | tr -d "\n") $1 "$2"
+
+if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+then
+  amiUserName="ubuntu"
+elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+then
+  amiUserName="ec2-user"
+elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+then
+  amiUserName="centos"
+elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+then
+  amiUserName="ec2-user"
+else
+  echo "wrong Operating System Name"
+fi
+
+ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $amiUserName $1 "$2"
 }
