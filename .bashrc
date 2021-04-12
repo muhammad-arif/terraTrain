@@ -159,20 +159,23 @@ else
   echo "wrong Operating System Name" && die
 fi
 
-echo "Do you want to see MKE installation logs?"
-echo "Press y to see the logs and press any other key to ignore."
-echo "You can always find the installation logs at /tmp/mke-installation.log"
-
-read input
+#echo "Do you want to see MKE installation logs?"
+#echo "Press y to see the logs and press any other key to ignore."
+#echo "You can always find the installation logs at /tmp/mke-installation.log"
+#
+#read input
 /terraTrain/configGenerator.sh
 nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
-
-if (( "$input" == 'y' || "$input" == 'Y' )) ; then
-  tail -f -n+1 /tmp/mke-installation.log | { sed '/Cluster is now configured/q'; pkill -PIPE -xg0 tail; } | tee output
-  tt-show
-else
-    tt-show
-fi
+#
+#if (( "$input" == 'y' || "$input" == 'Y' )) ; then
+#  tail -f /tmp/mke-installation.log | { sed '/Cluster is now configured/q'; pkill -PIPE -xg0 tail; } | tee output
+#  tt-show
+#else
+#    tt-show
+#fi
+tt-show
+echo "MKE installation process is running"
+printf "\nPlease check the MKE installation log buffer with the following command\ntail -f /tmp/mke-installation.log\n"
 }
 
 
