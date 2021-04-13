@@ -126,10 +126,16 @@ complete -C /usr/bin/terraform terraform
 alias d="docker"
 alias k="kubectl"
 alias k-n-kubesystem="kubectl -n kube-system"
-alias tt-cleanup="/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml"
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
 # terraTrain-run function to create a cluster
+
+tt-cleanup() {
+  pkill launchpad
+  /terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
+}
+
+
 tt-plan() {
     terraform plan -var-file=/terraTrain/config.tfvars
 }
@@ -191,9 +197,9 @@ printf "\nMKE installation process is running.\nPlease check the MKE installatio
 tt-show-clusterInfo() {
 printf "\n MKE and MSR Information: \n"
 echo "-------------------------------------------------------------------------------"
-printf  '\e[1;34m%-6s\e[m' "MKR URL: "
+printf  '\e[1;34m%-6s\e[m' "MKE URL: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | ("https://" + .attributes.public_dns)' 2>/dev/null
-printf  '\e[1;34m%-6s\e[m' "MKR URL: "
+printf  '\e[1;34m%-6s\e[m' "MSR URL: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | ("https://" + .attributes.public_dns)' 2>/dev/null
 printf '\e[1;34m%-6s\e[m' "Username: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
