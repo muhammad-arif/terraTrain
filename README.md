@@ -26,9 +26,23 @@ What do you need before using this?
     2. Docker client 
     3. Internet Connection
     4. AWS account
+## TLDR;
+1. Clone the repo or download the zip file 
+2. Unzip the file somehwere and cd into the terraTrain directory
+3. Build the image with `sudo docker build -t terratrain .` (this is the most time consuming part)
+4. Run the container wiht `sudo docker run -it terratrain`
+5. Now copy your AWS env variable commands and paste your AWS credentials inside the container
+6. Now edit the `config.tfvars` file according to your need
+7. Create your cluster with `tt-run` command
+8. Check your installed components with `tt-show` command.
+9. SSH to the desired node with `connect node's-public-dns`
+10. To generate client bundle use `tt-genClientBundle` command.
+11. To remove all the components of the cluster use `tt-purge` command.
 
+## Table of Contents
 - [Welcome to terraTrain](#welcome-to-terratrain)
   - [TLDR;](#tldr)
+  - [Table of Contents](#table-of-contents)
   - [Configuring and Running terraTrain](#configuring-and-running-terratrain)
     - [Install the platform](#install-the-platform)
     - [Run your cluster](#run-your-cluster)
@@ -77,19 +91,6 @@ What do you need before using this?
         - [image_repo=""](#image_repo)
     - [Intermediate usages](#intermediate-usages)
       - [Enabling AWS Single Sign On](#enabling-aws-single-sign-on)
-
-## TLDR;
-1. Clone the repo or download the zip file 
-2. Unzip the file somehwere and cd into the terraTrain directory
-3. Build the image with `sudo docker build -t terratrain .` (this is the most time consuming part)
-4. Run the container wiht `sudo docker run -it terratrain`
-5. Now copy your AWS env variable commands and paste your AWS credentials inside the container
-6. Now edit the `config.tfvars` file according to your need
-7. Create your cluster with `tt-run` command
-8. Check your installed components with `tt-show` command.
-9. SSH to the desired node with `connect node's-public-dns`
-10. To generate client bundle use `tt-genClientBundle` command.
-11. To remove all the components of the cluster use `tt-purge` command.
 
 
 ## Configuring and Running terraTrain
