@@ -48,47 +48,47 @@ What do you need before using this?
     - [Run your cluster](#run-your-cluster)
   - [tt(terraTrain) Command References](#ttterratrain-command-references)
     - [Instance Creation Commands](#instance-creation-commands)
-        - [tt-run](#tt-run)
-        - [tt-purge](#tt-purge)
-        - [connect](#connect)
+      - [tt-run](#tt-run)
+      - [tt-purge](#tt-purge)
+      - [connect](#connect)
     - [Cluster Related Commands](#cluster-related-commands)
-        - [tt-cleanup](#tt-cleanup)
-        - [tt-reinstall](#tt-reinstall)
-        - [tt-genClientBundle](#tt-genclientbundle)
-        - [tt-show](#tt-show)
-          - [tt-show-mke-cred](#tt-show-mke-cred)
-          - [tt-show-msr](#tt-show-msr)
-          - [tt-show-mgr](#tt-show-mgr)
-          - [tt-show-wkr](#tt-show-wkr)
+      - [tt-cleanup](#tt-cleanup)
+      - [tt-reinstall](#tt-reinstall)
+      - [tt-genClientBundle](#tt-genclientbundle)
+      - [tt-show](#tt-show)
+        - [tt-show-mke-cred](#tt-show-mke-cred)
+        - [tt-show-msr](#tt-show-msr)
+        - [tt-show-mgr](#tt-show-mgr)
+        - [tt-show-wkr](#tt-show-wkr)
     - [MKE Related Commands](#mke-related-commands)
-        - [tt-mke-swrm-svc-deploy](#tt-mke-swrm-svc-deploy)
-        - [tt-mke-k8s-svc-deploy](#tt-mke-k8s-svc-deploy)
-        - [tt-mke-toml-download](#tt-mke-toml-download)
-        - [tt-mke-toml-upload](#tt-mke-toml-upload)
-        - [tt-mke-rethinkcli](#tt-mke-rethinkcli)
-        - [tt-mke-etcdctl](#tt-mke-etcdctl)
+      - [tt-mke-swrm-svc-deploy](#tt-mke-swrm-svc-deploy)
+      - [tt-mke-k8s-svc-deploy](#tt-mke-k8s-svc-deploy)
+      - [tt-mke-toml-download](#tt-mke-toml-download)
+      - [tt-mke-toml-upload](#tt-mke-toml-upload)
+      - [tt-mke-rethinkcli](#tt-mke-rethinkcli)
+      - [tt-mke-etcdctl](#tt-mke-etcdctl)
     - [MSR Related Commands](#msr-related-commands)
-        - [tt-msr-login](#tt-msr-login)
-        - [tt-msr-populate-img](#tt-msr-populate-img)
-        - [tt-msr-rethinkcli](#tt-msr-rethinkcli)
+      - [tt-msr-login](#tt-msr-login)
+      - [tt-msr-populate-img](#tt-msr-populate-img)
+      - [tt-msr-rethinkcli](#tt-msr-rethinkcli)
   - [config.tfvars Configurtion file reference](#configtfvars-configurtion-file-reference)
       - [AWS Instance related configurations](#aws-instance-related-configurations)
-        - [region=""](#region)
-        - [name=""](#name)
-        - [caseNo=""](#caseno)
-        - [os_name=""](#os_name)
-        - [os_version=""](#os_version)
-        - [manager_count=""](#manager_count)
-        - [manager_instance_type=""](#manager_instance_type)
-        - [worker_count=""](#worker_count)
-        - [worker_instance_type=""](#worker_instance_type)
-        - [msr_count=""](#msr_count)
-        - [msr_instance_type="c4.xlarge"](#msr_instance_typec4xlarge)
+      - [region=""](#region)
+      - [name=""](#name)
+      - [caseNo=""](#caseno)
+      - [os_name=""](#os_name)
+      - [os_version=""](#os_version)
+      - [manager_count=""](#manager_count)
+      - [manager_instance_type=""](#manager_instance_type)
+      - [worker_count=""](#worker_count)
+      - [worker_instance_type=""](#worker_instance_type)
+      - [msr_count=""](#msr_count)
+      - [msr_instance_type="c4.xlarge"](#msr_instance_typec4xlarge)
       - [Cluster Related informations](#cluster-related-informations)
-        - [mcr_version="19.03.12"](#mcr_version190312)
-        - [mke_version="3.2.8"](#mke_version328)
-        - [msr_version="2.7.6"](#msr_version276)
-        - [image_repo=""](#image_repo)
+      - [mcr_version="19.03.12"](#mcr_version190312)
+      - [mke_version="3.2.8"](#mke_version328)
+      - [msr_version="2.7.6"](#msr_version276)
+      - [image_repo=""](#image_repo)
     - [Intermediate usages](#intermediate-usages)
       - [Enabling AWS Single Sign On](#enabling-aws-single-sign-on)
 
@@ -149,9 +149,10 @@ Enjoy your platform!!
 ## tt(terraTrain) Command References 
 
 ### Instance Creation Commands
-##### tt-run
+#### tt-run
 Usage:
 `tt-run` 
+
 **Background:**
 This command will Perform 3 actions,  
    1. Create instances
@@ -231,9 +232,10 @@ Please check the MKE installation log buffer with the following command
 tail -f /tmp/mke-installation.log
 
 ```
-##### tt-purge
+#### tt-purge
 Usage:
 `tt-purge`
+
 **Background:**
 This command will remove all the cloud instances that has been created by the `tt-run` command
 Example,
@@ -271,7 +273,7 @@ To see the full warning notes, run Terraform without -compact-warnings.
 
 Destroy complete! Resources: 6 destroyed.
 ```
-##### connect 
+#### connect 
 Usage:
 1. Just to log in to a node,
     `connect <node's_public_dns/ip>`
@@ -279,6 +281,8 @@ Usage:
 2. To run a command inside a node
     `connect <node's_public_dns/ip> "<command-to-run-on-remote-machine>"`
     E.g: `connect ec2-18-156-117-231.eu-central-1.compute.amazonaws.com "docker ps | grep ucp-kv`
+
+
 **Background:**
 This command is an implementation of ssh. The ssh command has been aliased to this command.
 The equivelent ssh command is the following,
@@ -287,9 +291,10 @@ When to use this command,
    1. When you need to login to a instance
    2. When you need to run a command to a instance without logging to that instance
 ### Cluster Related Commands
-##### tt-cleanup
+#### tt-cleanup
 Usage:
 `tt-cleanup`
+
 **Background:**
 This command will help you to re-use your instances. If you just need a different MKE version with the same ammount of nodes then you don't have to re-create the instances every time with `tt-run`. 
 Running this command will try to cleanup the MKE,MCR and MSR packages on your nodes.
@@ -297,13 +302,14 @@ This command
 When to use this command,
    1. When your MKE installation get failed for some reason in the `tt-run` command. To try to cleanup the MKE installation run this command
    2. When you need to un-install MKE 
-##### tt-reinstall
+#### tt-reinstall
 Usage:
 1. Change the following 3 cluster information from the `config.tfvars` according to your need
    - `mcr_version=`
    - `mke_version=`
    - `msr_version=`
 2. Then run the `tt-reinstall` command. 
+
 **Background:**
 This command will cleanup the installed MKE,MCR,MSR and re-install the MKE,MCR and MSR based on the `config.tfvars` file. 
 
@@ -312,9 +318,10 @@ When to use this command,
    2. When you need to un-install MKE 
    3. When you need to re-use the instances for creating a new cluster with different version.
 
-##### tt-genClientBundle
+#### tt-genClientBundle
 Usage:
 `tt-genClientBundle`
+
 **Background:**
 This command will generate a client bundle for the cluster. Almost 90% of the time you should run this after the installation. Because lots of other commands are depends on this.
 After a sucessful genearation you can use, `docker` and `kubectl` commands to communicate further with your cluster.
@@ -373,9 +380,10 @@ qba56dch1cuzj52ifox1bm7fd *   ip-172-31-12-153   Ready     Active         Leader
 
 ~~~~~~ Yeeeeup, working !! ~~~~~~ 
 ```
-##### tt-show
+#### tt-show
 Usage:
 `tt-show`
+
 **Background:**
 This command will show you the cluster wide information
 Example,
@@ -414,9 +422,10 @@ Password: "KXyVIrP8ngqXW23BOLLq"
  Worker Nodes: 
 -------------------------------------------------------------------------------
 ```
-###### tt-show-mke-cred
+##### tt-show-mke-cred
 Usage:
 `tt-show-mke-cred`
+
 **Background:**
 This command will show you the MKE credentials 
 Example,
@@ -427,9 +436,10 @@ $ tt-show-mke-creds
 Username: "driving-swine"
 Password: "KXyVIrP8ngqXW23BOLLq"
 ```
-###### tt-show-msr
+##### tt-show-msr
 Usage:
 `tt-show-msr`
+
 **Background:**
 This command will show you the MSR Node informations
 Example,
@@ -447,9 +457,10 @@ $ tt-show-msr
   "PublicIP": "18.197.141.99"
 }
 ```
-###### tt-show-mgr
+##### tt-show-mgr
 Usage:
 `tt-show-mgr`
+
 **Background:**
 This command will show you the Manager Node informations
 Example,
@@ -465,9 +476,10 @@ $ tt-show-mgr
   "PublicIP": "3.123.127.9"
 }
 ```
-###### tt-show-wkr
+##### tt-show-wkr
 Usage:
 `tt-show-wkr`
+
 **Background:**
 This command will show you the Worker Node informations
 Example,
@@ -484,44 +496,49 @@ $ tt-show-wkr
 }
 ```
 ### MKE Related Commands
-##### tt-mke-swrm-svc-deploy
+#### tt-mke-swrm-svc-deploy
 Usage:
 `tt-mke-swrm-svc-deploy`
+
 **Background:**
 This command will create a test swarm service based on the `dockercoin.yml` file.
 When to use this command,
    1. When you need to test swarm's service functionality by deploying a test application
 
-##### tt-mke-k8s-svc-deploy
+#### tt-mke-k8s-svc-deploy
 Usage:
 `tt-mke-k8s-svc-deploy`
+
 **Background:**
 This command will create a test swarm service based on the `dockercoin.yaml` file.
 When to use this command,
    1. When you need to test k8s functionality by deploying a test application
-##### tt-mke-toml-download
+#### tt-mke-toml-download
 Usage:
 `tt-mke-toml-download`
+
 **Background:**
 This will download the MKE's configuration file in the current directory as `ucp-config.toml`
 This option requires an activated client bundle.
 When to use this command,
    1. When you need to change some parameter on the MKE's configuration file
 
-##### tt-mke-toml-upload
+#### tt-mke-toml-upload
 Usage:
 `tt-mke-toml-upload`
+
 **Background:**
 This will upload the MKE's configuration file named as `ucp-config.toml` in the current directory.
 This option requires an activated client bundle.
 When to use this command,
    1. When you need to change some parameter on the MKE's configuration file
    
-##### tt-mke-rethinkcli
+#### tt-mke-rethinkcli
 Usage:
 This command can be run in two way,
 1. Run the `tt-mke-rethinkcli` command and then paste the rethinkdb query `r.dbList()`
 2. echoed the rethinkquery and pipe it with the `tt-mke-rethinkcli` command.
+
 **Background:**
 This command will connect with the first manager and will create an non-interective rethink session.
 You can use this commands to explore the rethinkdb tables of the MKE
@@ -552,11 +569,12 @@ $ echo "r.db('rethinkdb').table('table_status').filter({'db': 'ucp'}).pluck('id'
   }
 ]
 ```
-##### tt-mke-etcdctl
+#### tt-mke-etcdctl
 Usage:
 This command can be run in two way,
 1. Run the `tt-mke-etcdctl` command and then paste the etcd commands like `get`,`ls`, `member list` etc.
 2. echoed the etcd commands and pipe it with the `tt-mke-etcdctl` command.
+
 **Background:**
 This command will connect with the first manager and will create an non-interective etcdctl session.
 You can use this commands to explore the etcd contnets of the `ucp-kv` container.
@@ -577,22 +595,25 @@ $ echo "member list" | tt-mke-etcdctl
 5e8614be80ff9740: name=orca-kv-172.31.12.153 peerURLs=https://172.31.12.153:12380 clientURLs=https://172.31.12.153:12379 isLeader=true
 ```
 ### MSR Related Commands
-##### tt-msr-login
+#### tt-msr-login
 Usage:
 `tt-msr-login`
+
 **Background:**
 This command will log in to your existing MSR cluster so that you can push/pull images to the repostiory
-##### tt-msr-populate-img
+#### tt-msr-populate-img
 Usage:
 `tt-msr-populate-img`
+
 **Background:**
 This command will populate your MSR cluster with few test repositoires and tags.
 But you **need to have a license** before running this command.
-##### tt-msr-rethinkcli
+#### tt-msr-rethinkcli
 Usage:
 This command can be run in two way,
 1. Run the `tt-msr-rethinkcli` command and then paste the rethinkdb query `r.dbList()`
 2. echoed the rethinkquery and pipe it with the `tt-msr-rethinkcli` command.
+
 **Background:**
 This command will connect with the first MSR replica and will create an non-interective rethink session.
 You can use this commands to explore the rethinkdb tables of the MSR
@@ -625,24 +646,24 @@ $ echo "r.db('dtr2').table('tags').filter({'repository': 'driving-swine/redis'})
 ```
 ## config.tfvars Configurtion file reference
 #### AWS Instance related configurations
-##### region=""
+#### region=""
 choose your region. This is where you should write the region name.
 E.g., `eu-central-1`, `us-east-1`, `ap-southeast-1` etc.
 
-##### name=""
+#### name=""
 The standard is something like "yourname-caseno". Eg. arif-bosch-4799686
 The instance name would like, `arif-bosch-4799686-managerNode-01`, `arif-bosch-4799686-dtrNode-01`
 
-##### caseNo=""
+#### caseNo=""
 You can specify your case no here. This is just a tag to find your resources. 
-##### os_name=""
+#### os_name=""
 use "ubuntu" or  "redhat" or "centos" or "suse"
 At this moment ubuntu, redhat and centos are tested.
 Please use exact keywords like the following,
 `ubuntu`
 `redhat`
 `centos` 
-##### os_version=""
+#### os_version=""
 For `ubuntu following is the patters,
 `16.04`, .... `18.04`, ....., `20.04`
 For `redhat` following is the patters,
@@ -651,32 +672,32 @@ For `centos` following is the patters,
 `7.1`, `7.2`, ...... `7.9`
 
 For good result use known OS versions.
-##### manager_count=""
+#### manager_count=""
 How many manager you want. You should have at least one manager.
-##### manager_instance_type=""
+#### manager_instance_type=""
 You can configre the manager instance type. Following are few example,
 `c4.xlarge`, `m4.xlarge` etc.
-##### worker_count=""
+#### worker_count=""
 The number of worker node you want. 
-##### worker_instance_type=""
+#### worker_instance_type=""
 You can configre the worker instance type. Following are few example,
 `t2.micro`, `c4.xlarge`, `m4.xlarge` etc.
-##### msr_count=""
+#### msr_count=""
 The number of MSR replica you want. 
-##### msr_instance_type="c4.xlarge"
+#### msr_instance_type="c4.xlarge"
 You can configre the MSR replica instance type. Following are few example,
 `c4.xlarge`, `m4.xlarge` etc.
 
 #### Cluster Related informations
 Please change only the following informations if you want to use `tt-reinstall`.
-##### mcr_version="19.03.12"
+#### mcr_version="19.03.12"
 This is the version of Mirantis Container Runtime. **Please use full version**
-##### mke_version="3.2.8"
+#### mke_version="3.2.8"
 This is the version of Mirantis Kubernetes Engine. **Please use full version**
-##### msr_version="2.7.6"
+#### msr_version="2.7.6"
 This is the version of Mirantis Secure Registry. **Please use full version**
 
-##### image_repo=""
+#### image_repo=""
 For older version use `docker.io/docker`, from MKE 3.2.8 and forward use `docker.io/mirantis`
 
 ### Intermediate usages
