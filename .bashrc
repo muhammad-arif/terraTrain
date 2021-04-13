@@ -145,6 +145,8 @@ echo " " > /terraTrain/launchpad.yaml
 }
 
 tt-reinstall() {
+pkill launchpad
+/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
 /terraTrain/configGenerator.sh
 nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
 printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f /tmp/mke-installation.log\n"
@@ -261,12 +263,19 @@ echo "--------------------------------------------------------------------------
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 
-tt-mke-toml() {
+tt-mke-toml-download() {
     UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
     uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
     pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
     AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
     curl -k -H "Authorization: Bearer $AUTHTOKEN" https://${UCP_URL}/api/ucp/config-toml -o ucp-config.toml
+}
+tt-mke-toml-upload() {
+    UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
+    uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+    pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+    AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+    curl -k -H "accept: application/toml" -H "Authorization: Bearer $AUTHTOKEN" --upload-file 'ucp-config.toml' https://${UCP_URL}/api/ucp/config-toml
 }
 tt-mke-swrm-svc-deploy() {
     if [[ -d /terraTrain/client-bundle ]] 
@@ -279,7 +288,7 @@ tt-mke-swrm-svc-deploy() {
 tt-mke-k8s-svc-deploy() {
     if [[ -d /terraTrain/client-bundle ]] 
         then 
-            kubectl apply -f https://k8s.io/examples/application/mysql/mysql-statefulset.yaml     
+            kubectl apply -f terraTrain/dockercoin.yaml
     else 
         echo "Please run tt-genClientBundle to generate client bundle first" 
     fi
@@ -297,6 +306,14 @@ msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dt
 connect $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000001 -v dtr-ca-000000000001:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
 }
 
+tt-mke-etcdctl() {
+read echoedInput
+UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
+connect $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+}
+
+
+
 tt-msr-login() {
 msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
 if [[ -d /terraTrain/client-bundle ]] 
@@ -311,16 +328,19 @@ fi
 
 tt-msr-populate-img() {
     # Logging to MSR
-    
-    if [[ -d /terraTrain/client-bundle ]] 
-        then 
-            msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
-            curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
-            update-ca-certificates
-            docker login $msr -u $uname -p $pass
-    else 
-        echo "Please run tt-genClientBundle to generate the client bundle first" && return 1
-    fi
+    printf "\n YOU NEED TO ADD LICENSE TO MSR BEFORE RUNNING THIS COMMAND\n"
+    sleep 1
+    UCP_URL=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+    uname=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+    pass=$(cat terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+    auth=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+    msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+    curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
+    update-ca-certificates
+    docker login $msr -u $uname -p $pass
+    printf "\nEnabling Create on push repository"
+    curl -k -u $uname:$pass -X POST https://$msr/api/v0/meta/settings -H "accept: application/json" -H "content-type: application/json" -d "{ \"createRepositoryOnPush\": true}" &>/dev/null
+   
     # Pulling and pushing images
     
     docker pull nginx:alpine > /dev/null || return 1

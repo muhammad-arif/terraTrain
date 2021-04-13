@@ -1,0 +1,245 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: null
+  name: dockercoins
+spec:
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              io.kompose.network/dockercoins: "true"
+  podSelector:
+    matchLabels:
+      io.kompose.network/dockercoins: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: hasher
+  name: hasher
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      io.kompose.service: hasher
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/dockercoins: "true"
+        io.kompose.service: hasher
+    spec:
+      containers:
+        - image: training/dockercoins-hasher:1.0
+          name: hasher
+          ports:
+            - containerPort: 80
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: hasher
+  name: hasher
+spec:
+  ports:
+    - name: "32770"
+      port: 32770
+      targetPort: 80
+  selector:
+    io.kompose.service: hasher
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: redis
+  name: redis
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      io.kompose.service: redis
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/dockercoins: "true"
+        io.kompose.service: redis
+    spec:
+      containers:
+        - image: redis
+          name: redis
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: rng
+  name: rng
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      io.kompose.service: rng
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/dockercoins: "true"
+        io.kompose.service: rng
+    spec:
+      containers:
+        - image: training/dockercoins-rng:1.0
+          name: rng
+          ports:
+            - containerPort: 80
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: rng
+  name: rng
+spec:
+  ports:
+    - name: "32769"
+      port: 32769
+      targetPort: 80
+  selector:
+    io.kompose.service: rng
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: webui
+  name: webui
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      io.kompose.service: webui
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/dockercoins: "true"
+        io.kompose.service: webui
+    spec:
+      containers:
+        - image: training/dockercoins-webui:1.0
+          name: webui
+          ports:
+            - containerPort: 80
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: webui
+  name: webui
+spec:
+  ports:
+    - name: "32768"
+      port: 32768
+      targetPort: 80
+  selector:
+    io.kompose.service: webui
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: worker
+  name: worker
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      io.kompose.service: worker
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/dockercoins: "true"
+        io.kompose.service: worker
+    spec:
+      containers:
+        - image: training/dockercoins-worker:1.0
+          name: worker
+          resources: {}
+      restartPolicy: Always
+status: {}

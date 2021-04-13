@@ -1,14 +1,9 @@
 # AWS Info
-region=""           # choose your region
+region=""                       # choose your region
 name=""                         # yourname-caseno
 caseNo=""                       # you can specify yoru case no here. Later you can find it by case no
 os_name=""                      # use "ubuntu" or  "redhat" or "centos"
 os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
-
-# MKE MSR MCR info
-mcr_version="19.03.14"          # Please use specific minor engine version.
-mke_version="3.3.4"             # MKE Version
-msr_version="2.8.2"             # MSR Version
 
 # Managers Info
 manager_count="3"
@@ -22,6 +17,11 @@ worker_instance_type="t2.micro"
 msr_count="3"
 msr_instance_type="c4.xlarge"
 
+# MKE MSR MCR info
+# Please change only the following informations if you want to use `tt-reinstall`.
+mcr_version="19.03.14"          # Please use specific minor engine version.
+mke_version="3.3.4"             # MKE Version
+msr_version="2.8.2"             # MSR Version
 image_repo="docker.io/mirantis" #For older version use docker.io/docker
 #---------------------------------------------------------------------------------------------------------------------------
 # Check Again Please
