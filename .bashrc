@@ -118,7 +118,7 @@ die () {
 # Function for exiting with erorr
   ret=$?
   printf "\n$1\n"
-  exit "$ret"
+  return "$ret"
 }
 
 source /terraTrain/config.tfvars
@@ -126,7 +126,7 @@ complete -C /usr/bin/terraform terraform
 alias d="docker"
 alias k="kubectl"
 alias k-n-kubesystem="kubectl -n kube-system"
-alias tt-uninstall="/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml"
+alias tt-cleanup="/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml"
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
 # terraTrain-run function to create a cluster
@@ -137,6 +137,13 @@ tt-purge(){
 terraform destroy --force -compact-warnings -var-file=/terraTrain/config.tfvars
 echo " " > /terraTrain/launchpad.yaml
 }
+
+tt-reinstall() {
+/terraTrain/configGenerator.sh
+nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f /tmp/mke-installation.log\n"
+}
+
 tt-run() {
 var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
@@ -156,7 +163,7 @@ elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvar
 then
   export amiUserName="ec2-user" 
 else
-  echo "wrong Operating System Name" && die
+  echo "wrong Operating System Name" && return 1
 fi
 
 #echo "Do you want to see MKE installation logs?"
@@ -165,6 +172,7 @@ fi
 #
 #read input
 /terraTrain/configGenerator.sh
+/terraTrain/launchpad-linux-x64 register -name test --email test@mail.com --company "Mirantis Inc." -a yes
 nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
 #
 #if (( "$input" == 'y' || "$input" == 'Y' )) ; then
@@ -174,8 +182,8 @@ nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-
 #    tt-show
 #fi
 tt-show
-echo "MKE installation process is running"
-printf "\nPlease check the MKE installation log buffer with the following command\ntail -f /tmp/mke-installation.log\n"
+\
+printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f /tmp/mke-installation.log\n"
 }
 
 
@@ -297,59 +305,60 @@ fi
 
 tt-msr-populate-img() {
     # Logging to MSR
-    msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+    
     if [[ -d /terraTrain/client-bundle ]] 
         then 
+            msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
             curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
             update-ca-certificates
             docker login $msr -u $uname -p $pass
     else 
-        echo "Please run tt-genClientBundle to generate the client bundle first" 
+        echo "Please run tt-genClientBundle to generate the client bundle first" && return 1
     fi
     # Pulling and pushing images
     
-    docker pull nginx:alpine > /dev/null || die "Cannot pull image"
+    docker pull nginx:alpine > /dev/null || return 1
     docker tag nginx:alpine $msr/$uname/nginx:alpine
-    docker pull nginx:latest > /dev/null || die "Cannot pull image"
+    docker pull nginx:latest > /dev/null || return 1
     docker tag nginx:alpine $msr/$uname/nginx:latest
-    docker push $msr/$uname/nginx --all-tags || die 
+    docker push $msr/$uname/nginx --all-tags || return 1
 
     docker pull alpine:3.13.4 
     docker tag alpine:3.13.4 $msr/$uname/alpine:3.13.4
     docker pull alpine:latest
     docker tag alpine:latest $msr/$uname/alpine:latest
-    docker push $msr/$uname/alpine --all-tags || die 
+    docker push $msr/$uname/alpine --all-tags || return 1
 
-    docker pull redis:alpine3.13 > /dev/null || die "Cannot pull image"
+    docker pull redis:alpine3.13 > /dev/null || return 1
     docker tag redis:alpine3.13 $msr/$uname/redis:alpine3.13
-    docker pull redis:6.2.1-alpine3.13 > /dev/null || die "Cannot pull image"
+    docker pull redis:6.2.1-alpine3.13 > /dev/null || return 1
     docker tag redis:6.2.1-alpine3.13 $msr/$uname/redis:6.2.1-alpine3.13
-    docker push $msr/$uname/redis --all-tags || die 
+    docker push $msr/$uname/redis --all-tags || return 1
 
-    docker pull busybox:unstable-musl > /dev/null || die "Cannot pull image" 
+    docker pull busybox:unstable-musl > /dev/null || return 1
     docker tag busybox:unstable-musl $msr/$uname/busybox:unstable-musl
-    docker pull busybox:uclibc    > /dev/null || die "Cannot pull image"
+    docker pull busybox:uclibc    > /dev/null || return 1 
     docker tag busybox:uclibc $msr/$uname/busybox:uclibc
-    docker push $msr/$uname/busybox --all-tags || die 
+    docker push $msr/$uname/busybox --all-tags || return 1 
 
-    docker pull hello-world:latest > /dev/null || die "Cannot pull image"
+    docker pull hello-world:latest > /dev/null || return 1 
     docker tag hello-world:latest $msr/$uname/hello-world:latest
-    docker pull hello-world:linux > /dev/null || die "Cannot pull image"
+    docker pull hello-world:linux > /dev/null || return 1 
     docker tag hello-world:linux $msr/$uname/hello-world:linux
-    docker push $msr/$uname/hello-world --all-tags || die 
+    docker push $msr/$uname/hello-world --all-tags || return 1
     
-    docker pull haproxy:2.4-dev15-alpine > /dev/null || die "Cannot pull image"
+    docker pull haproxy:2.4-dev15-alpine > /dev/null || return 1
     docker tag haproxy:2.4-dev15-alpine $msr/$uname/haproxy:2.4-dev15-alpine
-    docker pull haproxy:2.2.13-alpine > /dev/null || die "Cannot pull image"
+    docker pull haproxy:2.2.13-alpine > /dev/null || return 1
     docker tag  haproxy:2.2.13-alpine $msr/$uname/haproxy:2.2.13-alpine
-    docker push $msr/$uname/haproxy --all-tags || die
+    docker push $msr/$uname/haproxy --all-tags || return 1
 
 
-    docker pull alpine/git:latest > /dev/null || die "Cannot pull image"
+    docker pull alpine/git:latest > /dev/null || return 1
     docker tag alpine/git:latest $msr/$uname/git:latest
-    docker pull alpine/git:v2.30.1 > /dev/null || die "Cannot pull image"
+    docker pull alpine/git:v2.30.1 > /dev/null || return 1
     docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1
-    docker push $msr/$uname/git --all-tags || die
+    docker push $msr/$uname/git --all-tags || return 1
 }
 
 # Connect function to ssh into a machine
