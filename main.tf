@@ -113,7 +113,7 @@ resource "aws_instance" "managerNode" {
 }
 ######## CREATING THE MSR INSTANCE #######
 
-resource "aws_instance" "dtrNode" {
+resource "aws_instance" "msrNode" {
   count = "${var.msr_count}"
   ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
   instance_type = var.msr_instance_type
@@ -127,7 +127,7 @@ resource "aws_instance" "dtrNode" {
     delete_on_termination = "true"
   }
   tags = {
-    Name = "${var.name}-dtrNode-${format("%02d", count.index + 1)}"
+    Name = "${var.name}-msrNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
@@ -135,7 +135,86 @@ resource "aws_instance" "dtrNode" {
 
   }
 }
+resource "aws_instance" "winNode" {
+  count = var.win_worker_count
+  instance_type                 = var.win_worker_instance_type # var.msr_instance_type
+  ami                           = data.aws_ami.windows[0].image_id
+  associate_public_ip_address   = true
+  subnet_id                     = "${data.aws_subnet.selected.id}"
+  security_groups               = ["${aws_security_group.allow-all-security-group.id}"]
+  user_data              = <<EOF
+<powershell>
+$admin = [adsi]("WinNT://./administrator, user")
+$admin.psbase.invoke("SetPassword", "${random_string.mke_password.result}")
+# Snippet to enable WinRM over HTTPS with a self-signed certificate
+# from https://gist.github.com/TechIsCool/d65017b8427cfa49d579a6d7b6e03c93
+Write-Output "Disabling WinRM over HTTP..."
+Disable-NetFirewallRule -Name "WINRM-HTTP-In-TCP"
+Disable-NetFirewallRule -Name "WINRM-HTTP-In-TCP-PUBLIC"
+Get-ChildItem WSMan:\Localhost\listener | Remove-Item -Recurse
+Write-Output "Configuring WinRM for HTTPS..."
+Set-Item -Path WSMan:\LocalHost\MaxTimeoutms -Value '1800000'
+Set-Item -Path WSMan:\LocalHost\Shell\MaxMemoryPerShellMB -Value '1024'
+Set-Item -Path WSMan:\LocalHost\Service\AllowUnencrypted -Value 'false'
+Set-Item -Path WSMan:\LocalHost\Service\Auth\Basic -Value 'true'
+Set-Item -Path WSMan:\LocalHost\Service\Auth\CredSSP -Value 'true'
+New-NetFirewallRule -Name "WINRM-HTTPS-In-TCP" `
+    -DisplayName "Windows Remote Management (HTTPS-In)" `
+    -Description "Inbound rule for Windows Remote Management via WS-Management. [TCP 5986]" `
+    -Group "Windows Remote Management" `
+    -Program "System" `
+    -Protocol TCP `
+    -LocalPort "5986" `
+    -Action Allow `
+    -Profile Domain,Private
+New-NetFirewallRule -Name "WINRM-HTTPS-In-TCP-PUBLIC" `
+    -DisplayName "Windows Remote Management (HTTPS-In)" `
+    -Description "Inbound rule for Windows Remote Management via WS-Management. [TCP 5986]" `
+    -Group "Windows Remote Management" `
+    -Program "System" `
+    -Protocol TCP `
+    -LocalPort "5986" `
+    -Action Allow `
+    -Profile Public
+$Hostname = [System.Net.Dns]::GetHostByName((hostname)).HostName.ToUpper()
+$pfx = New-SelfSignedCertificate -CertstoreLocation Cert:\LocalMachine\My -DnsName $Hostname
+$certThumbprint = $pfx.Thumbprint
+$certSubjectName = $pfx.SubjectName.Name.TrimStart("CN = ").Trim()
+New-Item -Path WSMan:\LocalHost\Listener -Address * -Transport HTTPS -Hostname $certSubjectName -CertificateThumbPrint $certThumbprint -Port "5986" -force
+Write-Output "Restarting WinRM Service..."
+Stop-Service WinRM
+Set-Service WinRM -StartupType "Automatic"
+Start-Service WinRM
+</powershell>
+EOF
 
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
+
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = "100"
+  }
+
+  connection {
+    type = "winrm"
+    user = "Administrator"
+    password = random_string.mke_password.result
+    timeout = "10m"
+    https = "true"
+    insecure = "true"
+    port=5986
+  }
+  tags = {
+    Name = "${var.name}-winNode-${format("%02d", count.index + 1)}"
+    resourceType = "instance"
+    resourceOwner = "${var.name}"
+    caseNumber = "${var.caseNo}"
+    counter = "${format("%2d", count.index + 1)}"
+  }
+}
 ######### AMI SEARCH #########
 data "aws_ami" "ubuntu" {
     owners = ["099720109477"]
@@ -214,3 +293,16 @@ data "aws_ami" "suse" {
         values = ["SUSE Linux Enterprise Server*"]
     }
 }    
+data "aws_ami" "windows" {
+    owners = ["801119661308"]
+    count  = "${var.win_worker_count == 0 ? 0 : 1}"
+    most_recent = true
+    filter {
+        name = "name"
+        values = ["*Windows_Server-2019-English-Full-ContainersLatest-*"]
+    }
+    filter {
+        name = "description"
+        values = ["Microsoft Windows Server 2019 with Containers Locale English AMI provided by Amazon"]
+    }
+}

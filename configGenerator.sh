@@ -104,12 +104,33 @@ EOL
 EOL
             done
     fi
+        ####### Generating Windows Worker Node Configuration
+    if [[ $win_worker_count != 0 ]]
+        then
+            for count in $(seq $win_worker_count)
+            do 
+                index=`expr $count - 1` #because index_key starts with 0
+                win_worker_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+                mkeadminPassword=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.id' 2>/dev/null)
+                cat >> launchpad.yaml << EOL
+  - role: worker
+    winRM:
+      address: $win_worker_address
+      user: Administrator
+      password: $mkeadminPassword
+      port: 5986
+      useHTTPS: true
+      insecure: true
+      useNTLM: false
+EOL
+            done
+    fi
     ####### Generating MSR Node Configuration
     
     for count in $(seq $msr_count)
             do 
                 index=`expr $count - 1` #because index_key starts with 0
-                msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="dtrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+                msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
                 cat >> launchpad.yaml << EOL
   - role: msr
     ssh:
@@ -132,7 +153,7 @@ EOL
 EOL
 
     ####### Generating MSR Configuration
-    msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="dtrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+    msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
     cat >> launchpad.yaml << EOL
   msr:
     version: $msr_version
@@ -210,7 +231,27 @@ EOL
 EOL
             done
     fi
-
+        ####### Generating Windows Worker Node Configuration
+    if [[ $win_worker_count != 0 ]]
+        then
+            for count in $(seq $win_worker_count)
+            do 
+                index=`expr $count - 1` #because index_key starts with 0
+                win_worker_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+                mkeadminPassword=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.id' 2>/dev/null)
+                cat >> launchpad.yaml << EOL
+  - role: worker
+    winRM:
+      address: $win_worker_address
+      user: Administrator
+      password: $mkeadminPassword
+      port: 5986
+      useHTTPS: true
+      insecure: true
+      useNTLM: false
+EOL
+            done
+    fi
     ####### Generating MKE Configuration
     mkeadminUsername=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
     mkeadminPassword=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.id' 2>/dev/null)                

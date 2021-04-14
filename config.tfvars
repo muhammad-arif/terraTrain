@@ -9,13 +9,15 @@ os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.
 manager_count="3"
 manager_instance_type="c4.xlarge"
 
-# Workers Infor
-worker_count="3"
-worker_instance_type="t2.micro"
-
 # MSR  Info
 msr_count="3"
 msr_instance_type="c4.xlarge"
+
+# Workers Infor
+worker_count="3"
+worker_instance_type="t2.micro"
+win_worker_count="0"
+win_worker_instance_type="c4.xlarge"
 
 # MKE MSR MCR info
 # Please change only the following informations if you want to use `tt-reinstall`.

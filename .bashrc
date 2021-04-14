@@ -149,7 +149,7 @@ pkill launchpad
 /terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
 /terraTrain/configGenerator.sh
 nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
-printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f /tmp/mke-installation.log\n"
+printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f -n+1 /tmp/mke-installation.log\n"
 }
 
 tt-run() {
@@ -184,14 +184,14 @@ fi
 nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
 #
 #if (( "$input" == 'y' || "$input" == 'Y' )) ; then
-#  tail -f /tmp/mke-installation.log | { sed '/Cluster is now configured/q'; pkill -PIPE -xg0 tail; } | tee output
+#  tail -f -n+1 /tmp/mke-installation.log | { sed '/Cluster is now configured/q'; pkill -PIPE -xg0 tail; } | tee output
 #  tt-show
 #else
 #    tt-show
 #fi
 tt-show
 \
-printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f /tmp/mke-installation.log\n"
+printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f -n+1 /tmp/mke-installation.log\n"
 }
 
 
@@ -202,7 +202,7 @@ echo "--------------------------------------------------------------------------
 printf  '\e[1;34m%-6s\e[m' "MKE URL: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | ("https://" + .attributes.public_dns)' 2>/dev/null
 printf  '\e[1;34m%-6s\e[m' "MSR URL: "
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | ("https://" + .attributes.public_dns)' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | ("https://" + .attributes.public_dns)' 2>/dev/null
 printf '\e[1;34m%-6s\e[m' "Username: "
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
 printf  '\e[1;34m%-6s\e[m' "Password: "
@@ -215,10 +215,13 @@ echo "--------------------------------------------------------------------------
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 printf "\n\n MSR Nodes: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 printf "\n\n Worker Nodes: \n"
 echo "-------------------------------------------------------------------------------"
 cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+printf "\n\n Windows Worker Nodes: \n"
+echo "-------------------------------------------------------------------------------"
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="winNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 
 tt-show() {
@@ -255,7 +258,7 @@ cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNod
 tt-show-msr() {
 printf "\n\n MSR Nodes: \n"
 echo "-------------------------------------------------------------------------------"
-cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="dtrNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
+cat terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
 }
 tt-show-wkr() {
 printf "\n\n Worker Nodes: \n"

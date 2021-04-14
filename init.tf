@@ -44,11 +44,11 @@ variable "msr_count" {
   description = "Please type the total number of dtr"
   default = 3
 }
-#variable "amiUserName" {
-#  type        = string
-#  description = "This is the AMI username. For ubuntu it's ubuntu, for centos it's centos etc."
-#  default = "${ var.os_name == "ubuntu" ? "ubuntu" : (var.os_name == "redhat" ? "ec2-user" : (var.os_name == "centos" ? "centos" : "ec2-user" ))}"
-#}
+variable "win_worker_count" {
+  type        = string
+  description = "Please type the total number of Windows worker"
+  default = 0
+}
 variable "msr_instance_type" {
   type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
@@ -60,6 +60,11 @@ variable "worker_instance_type" {
   default = "t2.micro"
 }
 variable "manager_instance_type" {
+  type        = string
+  description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
+  default = "c4.xlarge"
+}
+variable "win_worker_instance_type" {
   type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
   default = "c4.xlarge"
