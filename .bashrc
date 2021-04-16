@@ -140,7 +140,7 @@ tt-plan() {
     terraform plan -var-file=/terraTrain/config.tfvars
 }
 tt-purge(){
-terraform destroy --force -compact-warnings -var-file=/terraTrain/config.tfvars
+terraform destroy -auto-approve -compact-warnings -var-file=/terraTrain/config.tfvars
 echo " " > /terraTrain/launchpad.yaml
 }
 

@@ -1,6 +1,6 @@
 # AWS Info
 region=""                       # choose your region
-name=""                         # yourname-caseno
+name=""                         # Something to identify your instances 
 caseNo=""                       # you can specify yoru case no here. Later you can find it by case no
 os_name=""                      # use "ubuntu" or  "redhat" or "centos"
 os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
