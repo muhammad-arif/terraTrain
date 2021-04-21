@@ -82,7 +82,7 @@ resource "aws_instance" "workerNode" {
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
 #  user_data = data.template_cloudinit_config.replicas.rendered
   tags = {
-    Name = "${var.name}-workerNode-${format("%02d", count.index + 1)}"
+    Name = "${random_pet.mke_username.id}-${var.name}-workerNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
@@ -105,7 +105,7 @@ resource "aws_instance" "managerNode" {
     delete_on_termination = "true"
   }
   tags = {
-    Name = "${var.name}-managerNode-${format("%02d", count.index + 1)}"
+    Name = "${random_pet.mke_username.id}-${var.name}-managerNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
@@ -127,7 +127,7 @@ resource "aws_instance" "msrNode" {
     delete_on_termination = "true"
   }
   tags = {
-    Name = "${var.name}-msrNode-${format("%02d", count.index + 1)}"
+    Name = "${random_pet.mke_username.id}-${var.name}-msrNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
@@ -208,7 +208,7 @@ EOF
     port=5986
   }
   tags = {
-    Name = "${var.name}-winNode-${format("%02d", count.index + 1)}"
+    Name = "${random_pet.mke_username.id}-${var.name}-winNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
