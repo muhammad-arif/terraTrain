@@ -35,7 +35,7 @@ What do you need before using this?
 6. Now edit the `config.tfvars` file according to your need
 7. Create your cluster with `tt-run` command
 8. Check your installed components with `tt-show` command.
-9. SSH to the desired node with `connect node's-public-dns`
+9. SSH to the desired node with `connect m1` or `connect w1` or `connect public-dns`
 10. To generate client bundle use `tt-genClientBundle` command.
 11. To remove all the components of the cluster use `tt-purge` command.
 
@@ -71,6 +71,18 @@ What do you need before using this?
     - [tt-msr-login](#tt-msr-login)
     - [tt-msr-populate-img](#tt-msr-populate-img)
     - [tt-msr-rethinkcli](#tt-msr-rethinkcli)
+  - [EC2 Related Commands](#ec2-related-commands)
+    - [tt-ec2-status](#tt-ec2-status)
+    - [tt-ec2-start](#tt-ec2-start)
+    - [tt-ec2-start-mgr](#tt-ec2-start-mgr)
+    - [tt-ec2-start-wkr](#tt-ec2-start-wkr)
+    - [tt-ec2-start-msr](#tt-ec2-start-msr)
+    - [tt-ec2-start-win](#tt-ec2-start-win)
+    - [tt-ec2-stop](#tt-ec2-stop)
+    - [tt-ec2-stop-wkr](#tt-ec2-stop-wkr)
+    - [tt-ec2-stop-mgr](#tt-ec2-stop-mgr)
+    - [tt-ec2-stop-msr](#tt-ec2-stop-msr)
+    - [tt-ec2-stop-win](#tt-ec2-stop-win)
 - [config.tfvars Configurtion file reference](#configtfvars-configurtion-file-reference)
   - [AWS Instance related configurations](#aws-instance-related-configurations)
     - [region=""](#region)
@@ -260,12 +272,24 @@ Destroy complete! Resources: 6 destroyed.
 ```
 ### connect 
 Usage:
-1. Just to log in to a node,
+1. Just to log in to a node. You can ssh into a node in following ways,
+   
+   a. With Role
+      1. For manager use `m1`, `m2`, `m3` etc.
+          `connect m1`
+      2. For workers use `w1`, `w2`, `w3` etc.
+          `connect w2`
+      3. For msr use `d1`, `d2`, `d3` etc.
+          `connect d3`
+      4. For windows use `win1`, `win2`, `win3` etc.
+          `connect win3`
+
+   b. With Hostname
     `connect <node's_public_dns/ip>`
     E.g: `connect ec2-18-156-117-231.eu-central-1.compute.amazonaws.com`
 2. To run a command inside a node
-    `connect <node's_public_dns/ip> "<command-to-run-on-remote-machine>"`
-    E.g: `connect ec2-18-156-117-231.eu-central-1.compute.amazonaws.com "docker ps | grep ucp-kv`
+    `connect <node's_public_dns/ip/role> "<command-to-run-on-remote-machine>"`
+    E.g: `connect m1 "docker ps | grep ucp-kv`
 
 
 **Background:**
@@ -629,6 +653,63 @@ $ echo "r.db('dtr2').table('tags').filter({'repository': 'driving-swine/redis'})
 ]
 
 ```
+## EC2 Related Commands
+
+### tt-ec2-status
+Usage:
+`tt-ec2-status`
+Will show the status of all of the ec2 instance
+
+### tt-ec2-start
+Usage:
+`tt-ec2-start`
+Will start all the ec2 instance
+
+### tt-ec2-start-mgr
+Usage:
+`tt-ec2-start-mgr`
+Will start only the manager instances
+
+### tt-ec2-start-wkr
+Usage:
+`tt-ec2-start-wkr`
+Will start only the worker instances
+
+### tt-ec2-start-msr
+Usage:
+`tt-ec2-start-msr`
+Will start only the msr instances
+
+### tt-ec2-start-win
+Usage:
+`tt-ec2-start-win`
+Will start only the windows instances
+
+### tt-ec2-stop
+Usage:
+`tt-ec2-stop`
+Will stop all of the instances
+
+### tt-ec2-stop-wkr
+Usage:
+`tt-ec2-stop-wkr`
+Will stop only the worker instances
+
+### tt-ec2-stop-mgr
+Usage:
+`tt-ec2-stop-mgr`
+Will stop only the manager instances
+
+### tt-ec2-stop-msr
+Usage:
+`tt-ec2-stop-msr`
+Will stop only the msr instances
+
+### tt-ec2-stop-win
+Usage:
+`tt-ec2-stop-win`
+Will stop only the windows instances
+
 # config.tfvars Configurtion file reference
 ## AWS Instance related configurations
 ### region=""

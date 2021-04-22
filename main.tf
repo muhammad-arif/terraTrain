@@ -66,7 +66,7 @@ resource "aws_security_group" "allow-all-security-group" {
 }
 ####### CREATING THE KEY PAIR  #######
 resource "aws_key_pair" "deployer" {
-  key_name   = "${var.name}-deployer-key"
+  key_name   = "${var.name}-${random_pet.mke_username.id}-deployer-key"
   public_key = var.publicKey
 }
 
@@ -76,16 +76,17 @@ resource "aws_instance" "workerNode" {
   count = "${var.worker_count}"
   ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
   instance_type = var.worker_instance_type
-  key_name = "${var.name}-deployer-key"
+  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
 #  user_data = data.template_cloudinit_config.replicas.rendered
   tags = {
-    Name = "${random_pet.mke_username.id}-${var.name}-workerNode-${format("%02d", count.index + 1)}"
+    Name = "${var.name}-${random_pet.mke_username.id}-workerNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
+    role = "worker"
   }
 }
 
@@ -95,7 +96,7 @@ resource "aws_instance" "managerNode" {
   count = "${var.manager_count}"
   ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
   instance_type = var.manager_instance_type
-  key_name = "${var.name}-deployer-key"
+  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
@@ -105,10 +106,11 @@ resource "aws_instance" "managerNode" {
     delete_on_termination = "true"
   }
   tags = {
-    Name = "${random_pet.mke_username.id}-${var.name}-managerNode-${format("%02d", count.index + 1)}"
+    Name = "${var.name}-${random_pet.mke_username.id}-managerNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
+    role = "manager"
   }
 }
 ######## CREATING THE MSR INSTANCE #######
@@ -117,7 +119,7 @@ resource "aws_instance" "msrNode" {
   count = "${var.msr_count}"
   ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
   instance_type = var.msr_instance_type
-  key_name = "${var.name}-deployer-key"
+  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
@@ -127,11 +129,12 @@ resource "aws_instance" "msrNode" {
     delete_on_termination = "true"
   }
   tags = {
-    Name = "${random_pet.mke_username.id}-${var.name}-msrNode-${format("%02d", count.index + 1)}"
+    Name = "${var.name}-${random_pet.mke_username.id}-msrNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
     counter = "${format("%2d", count.index + 1)}"
+    role = "msr"
 
   }
 }
@@ -208,11 +211,12 @@ EOF
     port=5986
   }
   tags = {
-    Name = "${random_pet.mke_username.id}-${var.name}-winNode-${format("%02d", count.index + 1)}"
+    Name = "${var.name}-${random_pet.mke_username.id}-winNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
     counter = "${format("%2d", count.index + 1)}"
+    role = "win-worker"
   }
 }
 ######### AMI SEARCH #########

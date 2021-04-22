@@ -190,7 +190,7 @@ nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-
 #    tt-show
 #fi
 tt-show
-\
+
 printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f -n+1 /tmp/mke-installation.log\n"
 }
 
@@ -389,25 +389,205 @@ tt-msr-populate-img() {
     docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1
     docker push $msr/$uname/git --all-tags || return 1
 }
-
+tt-ec2-start() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | .attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 start-instances --instance-ids $i --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-start-mgr() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="manager") |.attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 start-instances --instance-ids $i --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-start-wkr() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="worker") |.attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 start-instances --instance-ids $i --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-start-msr() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="msr") |.attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 start-instances --instance-ids $i --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-start-win() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="win-worker") | .attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 start-instances --instance-ids $i --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-stop() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | .attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 stop-instances --instance-ids $i --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-stop-wkr() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="worker") |.attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 stop-instances --instance-ids $i --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-stop-mgr() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="manager") |.attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 stop-instances --instance-ids $i --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-stop-msr() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="msr") |.attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 stop-instances --instance-ids $i --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-stop-win() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="win-worker") |.attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+      printf "\nInstance Status: "
+      aws ec2 stop-instances --instance-ids $i --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+      printf "\n------\n"
+  done
+}
+tt-ec2-status() {
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | .attributes.id ')
+    do 
+      printf "\nInstance Name: "
+      cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $i '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name'
+      printf "Instasnce Status: "
+      aws ec2 describe-instances --instance-ids $i --region $region | jq '.Reservations[] | .Instances[] | .State.Name'
+      printf "\n------\n"
+  done
+}
 # Connect function to ssh into a machine
 connect() {
 
-if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
-then
-  amiUserName="ubuntu"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
-then
-  amiUserName="ec2-user"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
-then
-  amiUserName="centos"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
-then
-  amiUserName="ec2-user"
-else
-  echo "wrong Operating System Name"
-fi
+  #validation check
+  if [[ $# -eq 0 ]]
+  then
+      echo 'some message'
+      return 0;
+  fi
 
-ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false  -l $amiUserName $1 "$2"
+  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+  then
+    amiUserName="ubuntu"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+  then
+    amiUserName="ec2-user"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+  then
+    amiUserName="centos"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+  then
+    amiUserName="ec2-user"
+  else
+    echo "wrong Operating System Name"
+  fi
+
+
+
+  count=$(echo $1 | grep -o . | wc -l)
+
+  if [[ $count -eq 2 ]]
+    then
+      role=$(echo $1 | grep -o . | head -n 1)
+      instanceNo=$(echo $1 | grep -o . | tail -n 1)
+      index=`expr $instanceNo - 1`
+      if [[ $role == 'm' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no manager $instanceNo\n" ; exit 1; }
+      elif [[ $role == 'w' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no worker $instanceNo\n" ; exit 1; }
+      elif [[ $role == 'd' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no MSR $instanceNo\n" ; exit 1; }
+      else
+          echo "wrong role"
+          return 1
+      fi
+  elif [[ $1 =~ win[[:digit:]] ]]
+    then
+    instanceNo=$(echo $1 | grep -o . | tail -n 1)
+    instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+    mtype=win
+  else
+    instanceDNS=$1
+    instanceName=$1
+    mtype=linux
+  fi
+
+  if [[ $mtype == 'linux' ]]
+    then
+      printf "\n Logging into $instanceName...\n....\n"
+      ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+  else
+    if [[ $2 -eq 0 ]]
+      then
+      launchpad exec --interactive --target $instanceDNS
+    else
+      launchpad exec --target $instanceDNS $2
+    fi
+  fi
 }
