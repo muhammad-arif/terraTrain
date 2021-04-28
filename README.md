@@ -108,13 +108,16 @@ What do you need before using this?
 # Configuring and Running terraTrain
 ### Install the platform
 
-Clone this repo or just download the folder and unzip it and change directory into it.
+Clone this repo or just download the folder and unzip it and change directory into it. 
+git clone https://github.com/muhammad-arif/terraTrain.git  && cd terraTrain
+At this point you can do a first edit on the file config.tfvars and put your region , e.g eu-central-1 
+so that the image to be build on next step will already have your AWS region
 
 Build the container image,
 ```
 sudo docker build -t terratrain:v1 .
 ```
-Set the id of the case you are working on by create a variable so that you can find and relate with the container 
+Set the id of the case you are working on by creating a variable so that you can find and relate with the container 
 ```
 CASEID=40705683
 ```
@@ -129,20 +132,20 @@ $
 ```
 
 ### Run your cluster
-Collect the following aws access information from your aws power user access portal and just paste it to your terminal (inside the container)
+Collect the following aws access information from your aws PowerUserAccess portal and just paste it to your terminal (inside the container)
 ```
 export AWS_ACCESS_KEY_ID="ASIAQUMWQ3ATTWQD4ZFV"
 export AWS_SECRET_ACCESS_KEY="kH+ClCBTRofpzollgeFiEMYw2qkyCatENBgEYdYL"
 export AWS_SESSION_TOKEN="IQoJb3JpZ2luX2VjEDAaCWV1LXdlc3QtMiJGM"
 ```
 
-Edit the `config.tfvars` according to your requirement. If you don't it will ask you to death or run it the default configurations. The file also pretty self explanatory
+Edit the `config.tfvars` according to your requirement. If you don't it will ask you to death or run it the default configurations. The file is pretty self explanatory
 
 You are good to go run your terraTrain. To run use following command,
 ```
 tt-run
 ```
-To see the cluster related infomrations,
+To see the cluster related informations,
 ```
 tt-show
 ```
@@ -155,7 +158,9 @@ To delete the cluster,
 tt-purge
 ```
 If you forget to delete the cluster and exit out of the container, then just run the container again and exec into it and purge the cluster.
-
+```
+docker container exec name-of-container bash 
+```
 Enjoy your platform!! 
 
 # tt(terraTrain) Command References 
