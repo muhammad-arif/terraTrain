@@ -291,7 +291,7 @@ tt-mke-swrm-svc-deploy() {
 tt-mke-k8s-svc-deploy() {
     if [[ -d /terraTrain/client-bundle ]] 
         then 
-            kubectl apply -f terraTrain/dockercoin.yaml
+            kubectl apply -f /terraTrain/dockercoin.yaml
     else 
         echo "Please run tt-genClientBundle to generate client bundle first" 
     fi
@@ -300,19 +300,19 @@ tt-mke-rethinkcli() {
 read echoedInput
 UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
 mke_private_ip=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.private_ip' 2>/dev/null)
-connect $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
+connect-stripped $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
 }
 
 tt-msr-rethinkcli() {
 read echoedInput
 msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
-connect $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000001 -v dtr-ca-000000000001:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
+connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000001 -v dtr-ca-000000000001:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
 }
 
 tt-mke-etcdctl() {
 read echoedInput
 UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
-connect $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
 }
 
 
@@ -343,50 +343,51 @@ tt-msr-populate-img() {
     docker login $msr -u $uname -p $pass
     printf "\nEnabling Create on push repository"
     curl -k -u $uname:$pass -X POST https://$msr/api/v0/meta/settings -H "accept: application/json" -H "content-type: application/json" -d "{ \"createRepositoryOnPush\": true}" &>/dev/null
-   
-    # Pulling and pushing images
     
-    docker pull nginx:alpine > /dev/null || return 1
-    docker tag nginx:alpine $msr/$uname/nginx:alpine
-    docker pull nginx:latest > /dev/null || return 1
-    docker tag nginx:alpine $msr/$uname/nginx:latest
+
+    # Pulling and pushing images
+    printf "\nStart Pulling and pushing\n"
+    docker pull nginx:alpine &> /dev/null 
+    docker tag nginx:alpine $msr/$uname/nginx:alpine || return 1
+    docker pull nginx:latest &> /dev/null 
+    docker tag nginx:alpine $msr/$uname/nginx:latest || return 1
     docker push $msr/$uname/nginx --all-tags || return 1
 
-    docker pull alpine:3.13.4 
-    docker tag alpine:3.13.4 $msr/$uname/alpine:3.13.4
-    docker pull alpine:latest
-    docker tag alpine:latest $msr/$uname/alpine:latest
+    docker pull alpine:3.13.4 &> /dev/null 
+    docker tag alpine:3.13.4 $msr/$uname/alpine:3.13.4  || return 1
+    docker pull alpine:latest &> /dev/null
+    docker tag alpine:latest $msr/$uname/alpine:latest  || return 1
     docker push $msr/$uname/alpine --all-tags || return 1
 
-    docker pull redis:alpine3.13 > /dev/null || return 1
-    docker tag redis:alpine3.13 $msr/$uname/redis:alpine3.13
-    docker pull redis:6.2.1-alpine3.13 > /dev/null || return 1
-    docker tag redis:6.2.1-alpine3.13 $msr/$uname/redis:6.2.1-alpine3.13
+    docker pull redis:alpine3.13 &> /dev/null
+    docker tag redis:alpine3.13 $msr/$uname/redis:alpine3.13 || return 1
+    docker pull redis:6.2.1-alpine3.13 &> /dev/null
+    docker tag redis:6.2.1-alpine3.13 $msr/$uname/redis:6.2.1-alpine3.13 || return 1
     docker push $msr/$uname/redis --all-tags || return 1
 
-    docker pull busybox:unstable-musl > /dev/null || return 1
-    docker tag busybox:unstable-musl $msr/$uname/busybox:unstable-musl
-    docker pull busybox:uclibc    > /dev/null || return 1 
-    docker tag busybox:uclibc $msr/$uname/busybox:uclibc
+    docker pull busybox:unstable-musl &> /dev/null
+    docker tag busybox:unstable-musl $msr/$uname/busybox:unstable-musl || return 1
+    docker pull busybox:uclibc &> /dev/null
+    docker tag busybox:uclibc $msr/$uname/busybox:uclibc  || return 1
     docker push $msr/$uname/busybox --all-tags || return 1 
 
-    docker pull hello-world:latest > /dev/null || return 1 
-    docker tag hello-world:latest $msr/$uname/hello-world:latest
-    docker pull hello-world:linux > /dev/null || return 1 
-    docker tag hello-world:linux $msr/$uname/hello-world:linux
+    docker pull hello-world:latest &> /dev/null
+    docker tag hello-world:latest $msr/$uname/hello-world:latest || return 1
+    docker pull hello-world:linux &> /dev/null
+    docker tag hello-world:linux $msr/$uname/hello-world:linux || return 1
     docker push $msr/$uname/hello-world --all-tags || return 1
     
-    docker pull haproxy:2.4-dev15-alpine > /dev/null || return 1
-    docker tag haproxy:2.4-dev15-alpine $msr/$uname/haproxy:2.4-dev15-alpine
-    docker pull haproxy:2.2.13-alpine > /dev/null || return 1
-    docker tag  haproxy:2.2.13-alpine $msr/$uname/haproxy:2.2.13-alpine
+    docker pull haproxy:2.4-dev15-alpine &> /dev/null
+    docker tag haproxy:2.4-dev15-alpine $msr/$uname/haproxy:2.4-dev15-alpine || return 1
+    docker pull haproxy:2.2.13-alpine &> /dev/null
+    docker tag  haproxy:2.2.13-alpine $msr/$uname/haproxy:2.2.13-alpine || return 1
     docker push $msr/$uname/haproxy --all-tags || return 1
 
 
-    docker pull alpine/git:latest > /dev/null || return 1
-    docker tag alpine/git:latest $msr/$uname/git:latest
-    docker pull alpine/git:v2.30.1 > /dev/null || return 1
-    docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1
+    docker pull alpine/git:latest &> /dev/null
+    docker tag alpine/git:latest $msr/$uname/git:latest || return 1
+    docker pull alpine/git:v2.30.1 &> /dev/null
+    docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1 || return 1
     docker push $msr/$uname/git --all-tags || return 1
 }
 tt-ec2-start() {
@@ -516,7 +517,29 @@ connect() {
   #validation check
   if [[ $# -eq 0 ]]
   then
-      echo 'some message'
+  printf '
+Usage:
+
+Just to log in to a node. You can ssh into a node in following ways,
+
+1. With Role:
+
+For manager use m1, m2, m3 etc. 
+    Example: connect m1
+For workers use w1, w2, w3 etc. 
+   Example: connect w2
+For msr use d1, d2, d3 etc. 
+    Example: connect d3
+For windows use win1, win2, win3 etc. 
+    Example: connect win3
+
+2. With Hostname:
+connect <nodes_public_dns/ip> 
+    Example: connect ec2-18-156-117-231.eu-central-1.compute.amazonaws.com
+
+To run a command inside a node connect <nodes_public_dns/ip/role> "<command-to-run-on-remote-machine>" 
+E.g: connect m1 "docker ps | grep ucp-kv"
+'
       return 0;
   fi
 
@@ -581,6 +604,79 @@ connect() {
   if [[ $mtype == 'linux' ]]
     then
       printf "\n Logging into $instanceName...\n....\n"
+      ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+  else
+    if [[ $2 -eq 0 ]]
+      then
+      launchpad exec --interactive --target $instanceDNS
+    else
+      launchpad exec --target $instanceDNS $2
+    fi
+  fi
+}
+connect-stripped() {
+
+
+  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+  then
+    amiUserName="ubuntu"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+  then
+    amiUserName="ec2-user"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+  then
+    amiUserName="centos"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+  then
+    amiUserName="ec2-user"
+  else
+    echo "wrong Operating System Name"
+  fi
+
+
+
+  count=$(echo $1 | grep -o . | wc -l)
+
+  if [[ $count -eq 2 ]]
+    then
+      role=$(echo $1 | grep -o . | head -n 1)
+      instanceNo=$(echo $1 | grep -o . | tail -n 1)
+      index=`expr $instanceNo - 1`
+      if [[ $role == 'm' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no manager $instanceNo\n" ; exit 1; }
+      elif [[ $role == 'w' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no worker $instanceNo\n" ; exit 1; }
+      elif [[ $role == 'd' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no MSR $instanceNo\n" ; exit 1; }
+      else
+          echo "wrong role"
+          return 1
+      fi
+  elif [[ $1 =~ win[[:digit:]] ]]
+    then
+    instanceNo=$(echo $1 | grep -o . | tail -n 1)
+    instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+    mtype=win
+  else
+    instanceDNS=$1
+    instanceName=$1
+    mtype=linux
+  fi
+
+  if [[ $mtype == 'linux' ]]
+    then
       ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
   else
     if [[ $2 -eq 0 ]]
