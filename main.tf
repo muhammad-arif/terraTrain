@@ -128,6 +128,10 @@ resource "aws_instance" "msrNode" {
     volume_size = "20"
     delete_on_termination = "true"
   }
+  user_data              = <<EOF
+#!/bin/bash
+yum install -y nfs-utils || apt install -y nfs-common || zypper -n in nfs-client -y
+EOF
   tags = {
     Name = "${var.name}-${random_pet.mke_username.id}-msrNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
@@ -219,6 +223,33 @@ EOF
     role = "win-worker"
   }
 }
+resource "aws_instance" "nfsNode" {
+  count = "${var.nfs_backend}"
+  ami = data.aws_ami.nfsNodeImage[0].image_id 
+  instance_type = "t2.nano"
+  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
+  associate_public_ip_address = true
+  subnet_id = "${data.aws_subnet.selected.id}"
+  security_groups = ["${aws_security_group.allow-all-security-group.id}"]
+  user_data              = <<EOF
+#!/bin/bash
+apt update -y
+apt install -y nfs-kernel-server nfs-common
+mkdir /var/nfs/general -p
+chown nobody:nogroup /var/nfs/general
+chown -R nobody /var/nfs/general
+chmod -R 755 /var/nfs/general
+echo '/var/nfs/general    *(rw,sync,no_root_squash,no_subtree_check)' > /etc/exports
+systemctl restart nfs-kernel-server
+EOF
+  tags = {
+    Name = "${var.name}-${random_pet.mke_username.id}-nfsNode-${format("%02d", count.index + 1)}"
+    resourceType = "instance"
+    resourceOwner = "${var.name}"
+    caseNumber = "${var.caseNo}"
+    role = "nfs"
+  }
+}
 ######### AMI SEARCH #########
 data "aws_ami" "ubuntu" {
     owners = ["099720109477"]
@@ -308,5 +339,23 @@ data "aws_ami" "windows" {
     filter {
         name = "description"
         values = ["Microsoft Windows Server 2019 with Containers Locale English AMI provided by Amazon"]
+    }
+}
+data "aws_ami" "nfsNodeImage" {
+    owners = ["099720109477"]
+    count  = var.nfs_backend
+    most_recent = true
+    filter {
+        name = "name"
+        values = ["ubuntu/images/hvm-ssd/ubuntu-*-18.04*amd64*"]
+    }
+    filter {
+        name = "architecture"
+        values = ["x86_64"]
+    }
+    
+    filter {
+        name = "description"
+        values = ["Canonical, Ubuntu, *"]
     }
 }

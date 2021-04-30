@@ -12,8 +12,9 @@ manager_instance_type="c4.xlarge"
 # MSR  Info
 msr_count="3"
 msr_instance_type="c4.xlarge"
+nfs_backend="0"                 # 1 for true and 0 for no
 
-# Workers Infor
+# Workers Info
 worker_count="3"
 worker_instance_type="t2.micro"
 win_worker_count="0"

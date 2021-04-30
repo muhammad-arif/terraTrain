@@ -110,6 +110,22 @@ if ! shopt -oq posix; then
     . /etc/bash_completion
   fi
 fi
+# adding some color variables
+BLACK=$(tput setaf 0)           # ${BLACK}
+RED=$(tput setaf 1)             # ${RED}
+GREEN=$(tput setaf 2)           # ${GREEN}
+YELLOW=$(tput setaf 3)          # ${YELLOW}
+LIME_YELLOW=$(tput setaf 190)   # ${LIME_YELLOW}
+POWDER_BLUE=$(tput setaf 153)   # ${POWDER_BLUE}
+BLUE=$(tput setaf 4)            # ${BLUE}
+MAGENTA=$(tput setaf 5)         # ${MAGENTA}
+CYAN=$(tput setaf 6)            # ${CYAN}
+WHITE=$(tput setaf 7)           # ${WHITE}
+BRIGHT=$(tput bold)             # ${BRIGHT}
+NORMAL=$(tput sgr0)             # ${NORMAL}
+BLINK=$(tput blink)             # ${BLINK}
+REVERSE=$(tput smso)            # ${REVERSE}
+UNDERLINE=$(tput smul)          # ${UNDERLINE}
 
 #####################################################################################################################################################################
 #####################################################################################################################################################################
@@ -131,8 +147,27 @@ alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 # terraTrain-run function to create a cluster
 
 tt-cleanup() {
+  printf "\n${REVERSE}[Step-1]${YELLOW} Trying to uninstall the cluster...${NORMAL}\n"
   pkill launchpad
   /terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
+  printf "\n[Step-2] Rebooting Machines...\n"
+  for i in $(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role!="nfs") | .attributes.public_dns')
+    do 
+    connect $i "sudo /sbin/shutdown -r now"
+  done 
+  # rebooting nfs node
+  connect  ubuntu@$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | .attributes.public_dns') "sudo /sbin/shutdown -r now" &>/dev/null
+
+  printf "\n${BLINK}${YELLOW}[Step-2] Lets wait for 10 seconds for those machine to be available...\n${NORMAL}"
+  sleep 20
+  printf "\n${REVERSE}[Step-3]${YELLOW} Cleanig up Directories...\n${NORMAL}"
+  for i in $(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role!="nfs") | .attributes.public_dns')
+    do 
+    connect $i "uptime; sudo rm -rf /var/lib/docker/* /etc/cni/* /etc/containerd/* /var/lib/containerd/* /var/lib/kubelet/* /var/lib/docker-engine/*; ls /var/lib/docker/* /etc/cni/* /etc/containerd/* /var/lib/containerd/* /var/lib/kubelet/* /var/lib/docker-engine/* "
+  done
+  # Clearing nfs node's NFS directory
+  connect  ubuntu@$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | .attributes.public_dns') "sudo systemctl stop nfs-server;sudo rm -rf /var/nfs/general/*;sudo systemctl start nfs-server" &>/dev/null
+  printf "\nDone\nNow change just the MKE,MCR,MSR version on config.tfvars and run tt-reinstall \n"
 }
 
 
@@ -153,45 +188,52 @@ printf "\nMKE installation process is running.\nPlease check the MKE installatio
 }
 
 tt-run() {
-var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
-/usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
-terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings || return 1 
-#Exporting AMI name for global reachability
+  var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
+  /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
+  printf "\n${REVERSE}[Step-1]${CYAN} Trying to spin up the instances on cloud...${NORMAL}\n"
 
-if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
-then
-  amiUserName="ubuntu"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
-then
-  export amiUserName="ec2-user"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
-then
-  export amiUserName="centos"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
-then
-  export amiUserName="ec2-user" 
-else
-  echo "wrong Operating System Name" && return 1
-fi
+  terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings || return 1 
+  #Exporting AMI name for global reachability
 
-#echo "Do you want to see MKE installation logs?"
-#echo "Press y to see the logs and press any other key to ignore."
-#echo "You can always find the installation logs at /tmp/mke-installation.log"
-#
-#read input
-/terraTrain/configGenerator.sh
-/terraTrain/launchpad-linux-x64 register -name test --email test@mail.com --company "Mirantis Inc." -a yes
-nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
-#
-#if (( "$input" == 'y' || "$input" == 'Y' )) ; then
-#  tail -f -n+1 /tmp/mke-installation.log | { sed '/Cluster is now configured/q'; pkill -PIPE -xg0 tail; } | tee output
-#  tt-show
-#else
-#    tt-show
-#fi
-tt-show
+  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+  then
+    amiUserName="ubuntu"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+  then
+    export amiUserName="ec2-user"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+  then
+    export amiUserName="centos"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+  then
+    export amiUserName="ec2-user" 
+  else
+    echo "wrong Operating System Name" && return 1
+  fi
 
-printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f -n+1 /tmp/mke-installation.log\n"
+  #echo "Do you want to see MKE installation logs?"
+  #echo "Press y to see the logs and press any other key to ignore."
+  #echo "You can always find the installation logs at /tmp/mke-installation.log"
+  #
+  #read input
+  printf "\n${REVERSE}[Step-2]${MAGENTA} Generating configuration for Launchpad...${NORMAL}\n"
+
+  /terraTrain/configGenerator.sh
+  /terraTrain/launchpad-linux-x64 register -name test --email test@mail.com --company "Mirantis Inc." -a yes
+  nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+  #
+  #if (( "$input" == 'y' || "$input" == 'Y' )) ; then
+  #  tail -f -n+1 /tmp/mke-installation.log | { sed '/Cluster is now configured/q'; pkill -PIPE -xg0 tail; } | tee output
+  #  tt-show
+  #else
+  #    tt-show
+  #fi
+  tt-show
+  printf "\n${BLINK}${REVERSE}[Step-3]${MAGENTA} MKE installation is running...${NORMAL}\n"
+
+  printf "\nIf you want to check the installation process use following command for watching log buffer\n"
+  
+  printf "\n${BLINK}${MAGENTA}tail -f -n+1 /tmp/mke-installation.log\n${NORMAL}"
 }
 
 

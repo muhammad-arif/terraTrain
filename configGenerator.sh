@@ -154,7 +154,8 @@ EOL
 
     ####### Generating MSR Configuration
     msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
-    cat >> launchpad.yaml << EOL
+    if [[ $nfs_backend == 0 ]] ; then
+      cat >> launchpad.yaml << EOL
   msr:
     version: $msr_version
     imageRepo: "docker.io/mirantis"
@@ -163,7 +164,19 @@ EOL
     - --ucp-insecure-tls
     replicaIDs: sequential
 EOL
-
+    else
+      nfs_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="nfsNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+      cat >> launchpad.yaml << EOL
+  msr:
+    version: $msr_version
+    imageRepo: "docker.io/mirantis"
+    installFlags:
+    - --dtr-external-url $msr_address
+    - --ucp-insecure-tls
+    - --nfs-storage-url nfs://$nfs_address/var/nfs/general
+    replicaIDs: sequential
+EOL
+  fi
     ####### Generating MCR Configuration
     cat >> launchpad.yaml << EOL
   mcr:

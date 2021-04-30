@@ -91,3 +91,7 @@ variable "msr_version" {
   type        = string
   description = "Please type your desired Mirantis Secure Registry version"
 }
+variable "nfs_backend" {
+  type        = string
+  description = "Please type 1 or 0 for yes or no"
+}
