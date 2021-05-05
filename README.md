@@ -109,7 +109,9 @@ What do you need before using this?
 ### Install the platform
 
 Clone this repo or just download the folder and unzip it and change directory into it. 
+```
 git clone https://github.com/muhammad-arif/terraTrain.git  && cd terraTrain
+```
 At this point you can do a first edit on the file config.tfvars and put your region , e.g eu-central-1 
 so that the image to be build on next step will already have your AWS region
 
