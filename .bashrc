@@ -150,7 +150,7 @@ tt-cleanup() {
   printf "\n${REVERSE}[Step-1]${YELLOW} Trying to uninstall the cluster...${NORMAL}\n"
   pkill launchpad
   /terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
-  printf "\n[Step-2] Rebooting Machines...\n"
+  printf "\n${REVERSE}[Step-2]${YELLOW} Rebooting Machines...${NORMAL}\n"
   for i in $(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role!="nfs") | .attributes.public_dns')
     do 
     connect $i "sudo /sbin/shutdown -r now"
@@ -167,7 +167,7 @@ tt-cleanup() {
   done
   # Clearing nfs node's NFS directory
   connect  ubuntu@$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | .attributes.public_dns') "sudo systemctl stop nfs-server;sudo rm -rf /var/nfs/general/*;sudo systemctl start nfs-server" &>/dev/null
-  printf "\nDone\nNow change just the MKE,MCR,MSR version on config.tfvars and run tt-reinstall \n"
+  printf "\n${REVERSE}Done\n${YELLOW}Now change just the MKE,MCR,MSR version on config.tfvars and run tt-reinstall ${NORMAL}\n"
 }
 
 
