@@ -1,7 +1,7 @@
 # AWS Info
-region=""                       # choose your region
-name=""                         # Something to identify your instances 
-caseNo=""                       # you can specify yoru case no here. Later you can find it by case no
+region=""                       # choose your region eg eu-central-1, or ap-east-1, or us-east-1 etc
+name=""                         # Something to identify your instances, can be your username like bob-geldof
+caseNo=""                       # you can specify your case no here. Later you can find it by case no (can be left empty)
 os_name=""                      # use "ubuntu" or  "redhat" or "centos"
 os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
 
@@ -25,7 +25,9 @@ win_worker_instance_type="c4.xlarge"
 mcr_version="19.03.14"          # Please use specific minor engine version.
 mke_version="3.3.4"             # MKE Version
 msr_version="2.8.2"             # MSR Version
-image_repo="docker.io/mirantis" #For older version use docker.io/docker
+image_repo="docker.io/mirantis" #For older version use docker.io/docker , specifically use : 
+# docker.io/docker for images up-to: 3.1.14, 3.2.7, 3.3.1  (taken from https://hub.docker.com/r/docker/ucp/tags?page=3&ordering=name ) 
+# docker.io/mirantis for images : 3.1.15+, 3.2.8+, 3.3.2+  (taken from https://hub.docker.com/r/mirantis/ucp/tags?page=1&ordering=name ) 
 #---------------------------------------------------------------------------------------------------------------------------
 # Check Again Please
 
