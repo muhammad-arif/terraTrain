@@ -1,4 +1,5 @@
-### t deploy lab|cluster|instances  DONE 
+#!/bin/bash
+### t deploy lab|cluster|instances  
 t-deploy() {
   case "$1" in
     "lab") t-deploy-lab 
@@ -40,7 +41,7 @@ t-destroy-cluster() {
   echo "t-destroy-cluster was called "
 }  
 # what about t-destroy-instances ?? 
-### t stop managers|msrs|workers|windows   DONE 
+### t stop managers|msrs|workers|windows   
 t-stop() {
   case "$1" in
     "managers") t-stop-managers
@@ -72,7 +73,7 @@ t-show-ip() {
   case "$1" in
     "managers") t-show-ip-managers
 			exit;;
-	"msrs")    t-show-ip-msrs
+	"msrs") t-show-ip-msrs
 			exit;;
 	"workers") t-show-ip-workers
 			exit;;
@@ -81,20 +82,28 @@ t-show-ip() {
 	"all") t-show-ip-all
 	       exit;;
 	*) echo "t show ip managers|msrs|workers|windows|all"
-	   exit ;;
+	   exit;;
   esac
 }
-t-show-ip-managers() { }
-t-show-ip-msrs() { }
-t-show-ip-workers() { }
-t-show-ip-windows() { }
+t-show-ip-managers() { 
+  echo "t show ip managers was typed"
+}
+t-show-ip-msrs() { 
+  echo "t show ip msrs was typed"
+}
+t-show-ip-workers() { 
+  echo "t show ip workers was typed"
+}
+t-show-ip-windows() { 
+  echo "t show ip windows was typed"
+}
 t-show-ip-all() {
   t-show-ip-managers
   t-show-ip-msrs
   t-show-ip-workers
   # t-show-ip-windows   # if windows VMs exist 
 }
-#### t show dns managers|msrs|workers|windows|all  DONE 
+#### t show dns managers|msrs|workers|windows|all  
 t-show-dns() {
   case "$1" in
     "managers") t-show-dns-managers
@@ -111,17 +120,25 @@ t-show-dns() {
 	   exit ;;
   esac
 }
-t-show-dns-managers() { }
-t-show-dns-msrs() { }
-t-show-dns-workers() { }
-t-show-dns-windows() { }
+t-show-dns-managers() { 
+  echo "t show dns managers was typed"
+}
+t-show-dns-msrs() { 
+  echo "t show dns msrs was typed"
+}
+t-show-dns-workers() { 
+  echo "t show dns workers was typed"
+}
+t-show-dns-windows() { 
+  echo "t show dns windows was typed"
+}
 t-show-dns-all() {
   t-show-dns-managers
   t-show-dns-msrs
   t-show-dns-workers
   # t-show-dns-windows   # if windows VMs exist 
 }
-#### t show hostname managers|msrs|workers|windows  DONE
+#### t show hostname managers|msrs|workers|windows  
 t-show-hostname() {
   case "$1" in
     "managers") t-show-hostname-managers
@@ -136,21 +153,45 @@ t-show-hostname() {
 	   exit ;;
   esac
 }
-t-show-hostname-managers() { }
-t-show-hostname-msrs() { }
-t-show-hostname-workers() { }
-t-show-hostname-windows() { }
-#### t show creds mke|msr                          DONE 
-t-show-creds-mke() { }
-t-show-creds-msr() { }
+t-show-hostname-managers() { 
+  echo "t show hostname managers was typed"
+}
+t-show-hostname-msrs() { 
+  echo "t show hostname msrs was typed"
+}
+t-show-hostname-workers() { 
+  echo "t show hostname workers was typed"
+}
+t-show-hostname-windows() { 
+  echo "t show hostname windows was typed"
+}
+#### t show creds mke|msr                          
+t-show-creds-mke() { 
+  echo "t show creds mke was typed "
+}
+t-show-creds-msr() { 
+  echo "t show creds msr was typed "
+}
 ### t show access​-ke​y-linux|access​-ke​y-windows
-t-show-access​_ke​y_linux() { }
-t-show-access​_ke​y_windows() { }
-#### t show status managers|msrs|workers|windows|all  DONE
-t-show-status-managers() { }
-t-show-status-msrs() { }
-t-show-status-workers() { }
-t-show-status-windows() { }
+t-show-access​_ke​y_linux() { 
+  echo "t show access​-ke​y-linux was typed"
+}
+t-show-access​_ke​y_windows() { 
+  echo "t show access​-ke​y-windows was typed"
+}
+#### t show status managers|msrs|workers|windows|all  
+t-show-status-managers() { 
+  echo "t show status managers was typed"
+}
+t-show-status-msrs() { 
+  echo "t show status msrs was typed"
+}
+t-show-status-workers() { 
+  echo "t show status workers was typed"
+}
+t-show-status-windows() { 
+  echo "t show status windows was typed"
+}
 t-show-status-all() {
   t-show-status-msrs
   t-show-status-msrs
@@ -158,9 +199,13 @@ t-show-status-all() {
   # t-show-status-wins  # if windows VMs exist 
 }
 ### t show versions 
-t-show-versions() { }
+t-show-versions() { 
+  echo "t show versions  was typed"
+}
 ### t show all 
-t-show-all() { }
+t-show-all() { 
+  echo "t show all  was typed"
+}
 ##### 1st level usage function : 
 usage1() {
   echo "t deploy lab|cluster|instances "
@@ -172,50 +217,56 @@ usage1() {
   echo "t stop managers|workers|msrs|windows|manager1|msr2|worker3 "
   echo "t destroy lab|cluster "
 }
-######### Parsing starts here, t is $0 , and we an have $1 $2 , or $1 $2 $3 ########
-if [ $# -eq 3 ]; then 
-  case "$2" in 
-  "deploy") t-deploy $3    # t deploy lab|cluster|instances
+######### Parsing starts here, t is $0 , and we an have $1 $2 , or $1 $2 $3 depending on if the $# == 2 or $# == 3  ########
+###### t should be an alias for t-commandline.bash  executable file  ######
+#### ATTENTION : Maybe we will need to use break;; and not exit;; #### 
+if [ $# -eq 2 ]; then 
+  case "$1" in 
+  "deploy") t-deploy $2    # t deploy lab|cluster|instances
           exit ;;
-  "destroy") t-destroy $3  # t destroy lab|cluster
+  "destroy") t-destroy $2  # t destroy lab|cluster
            exit ;;
-  "stop")  t-stop $3       # t stop managers|msrs|workers|windows
+  "stop")  t-stop $2       # t stop managers|msrs|workers|windows
          exit;;
   "show") case "$3" in 
 		    "versions") t-show-versions
 			             exit ;;
 		    "all") t-show-all 
 			        exit ;;
-			"access​-ke​y-linux") t-show-access​_ke​y_linux()
-			         exit;;
-			"access​-ke​y-windows") t-show-access​_ke​y_windows()
-			         exit;;
+			"access​-ke​y-linux") t-show-access​_ke​y_linux
+			        exit;;
+			"access​-ke​y-windows") t-show-access​_ke​y_windows
+			        exit;;
 			 *) echo "t show versions|all|access​-ke​y-linux|access​-ke​y-windows "
 		  esac 
          exit;;
   *) echo "t deploy|destroy|stop|show ... "
      exit ;;
   esac 
-elif [ $# -eq 4 ]; then 
-  case "$2" in 
-  "show")     # t show ip|dns|hostname|creds|status ...
-         case "$3" in 
-		 "ip") t-show-ip $4
+elif [ $# -eq 3 ]; then 
+  case "$1" in 
+  "show") # t show ip|dns|hostname|creds|status ...
+         case "$2" in 
+		 "ip") t-show-ip $3
 				exit;;
-		 "dns") t-show-dns $4
+		 "dns") t-show-dns $3
 				exit;;
-		 "hostname") t-show-hostname $4
+		 "hostname") t-show-hostname $3
 		        exit;;
-		 "creds")  t-show-creds $4		
+		 "creds")  t-show-creds $3		
 				exit;;
-		 "status") t-show-status $4
+		 "status") t-show-status $3
 		        exit;;
 		  *) echo " t show ip|dns|hostname|creds|status ... "
 		     exit;;
 		 esac 
-		 exit;;
-  "gen")
-        exit;;  
+	    exit;;
+#  "gen")   # t gen client-bundle|
+#         case "$3" in 
+#        exit;;  
+  *)  usage1
+      exit;;
+  esac
 else 
   usage1 
 fi
