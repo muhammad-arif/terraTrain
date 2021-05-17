@@ -154,6 +154,7 @@ tt-cleanup() {
   for i in $(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role!="nfs") | .attributes.public_dns')
     do 
     connect $i "sudo /sbin/shutdown -r now"
+    sleep 5
   done 
   # rebooting nfs node
   connect  ubuntu@$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | .attributes.public_dns') "sudo /sbin/shutdown -r now" &>/dev/null
@@ -180,11 +181,11 @@ echo " " > /terraTrain/launchpad.yaml
 }
 
 tt-reinstall() {
-pkill launchpad
-/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
-/terraTrain/configGenerator.sh
-nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
-printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f -n+1 /tmp/mke-installation.log\n"
+  pkill launchpad
+  /terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
+  /terraTrain/configGenerator.sh
+  nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+  printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f -n+1 /tmp/mke-installation.log\n"
 }
 
 tt-run() {
@@ -352,9 +353,9 @@ connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr
 }
 
 tt-mke-etcdctl() {
-read echoedInput
-UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
-connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+  read echoedInput
+  UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
+  connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
 }
 
 

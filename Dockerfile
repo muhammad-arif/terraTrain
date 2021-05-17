@@ -38,7 +38,10 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
     ./aws/install && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
-    apt-get -y update && apt-get install -y terraform  docker-ce-cli
+    apt-get -y update && apt-get install -y terraform  docker-ce-cli &&\
+    chmod +x t-commandline.bash && \
+    cp t-commandline.bash /bin/t && \
+    cp t-commandline.bash /bin/terraTrain 
     
  
 # Some housekeeping
