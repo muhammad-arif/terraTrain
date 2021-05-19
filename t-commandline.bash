@@ -18,9 +18,109 @@ BLINK=$(tput blink)             # ${BLINK}
 REVERSE=$(tput smso)            # ${REVERSE}
 UNDERLINE=$(tput smul)          # ${UNDERLINE}
 ### t deploy lab|cluster|instances  
+connect() {
+
+  #validation check
+  if [[ $# -eq 0 ]]
+  then
+  printf '
+Usage:
+
+Just to log in to a node. You can ssh into a node in following ways,
+
+1. With Role:
+
+For manager use m1, m2, m3 etc. 
+    Example: connect m1
+For workers use w1, w2, w3 etc. 
+   Example: connect w2
+For msr use d1, d2, d3 etc. 
+    Example: connect d3
+For windows use win1, win2, win3 etc. 
+    Example: connect win3
+
+2. With Hostname:
+connect <nodes_public_dns/ip> 
+    Example: connect ec2-18-156-117-231.eu-central-1.compute.amazonaws.com
+
+To run a command inside a node connect <nodes_public_dns/ip/role> "<command-to-run-on-remote-machine>" 
+E.g: connect m1 "docker ps | grep ucp-kv"
+'
+      return 0;
+  fi
+
+  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+  then
+    amiUserName="ubuntu"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+  then
+    amiUserName="ec2-user"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+  then
+    amiUserName="centos"
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+  then
+    amiUserName="ec2-user"
+  else
+    echo "wrong Operating System Name"
+  fi
+
+
+
+  count=$(echo $1 | grep -o . | wc -l)
+
+  if [[ $count -eq 2 ]]
+    then
+      role=$(echo $1 | grep -o . | head -n 1)
+      instanceNo=$(echo $1 | grep -o . | tail -n 1)
+      index=`expr $instanceNo - 1`
+      if [[ $role == 'm' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no manager $instanceNo\n" ; exit 1; }
+      elif [[ $role == 'w' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no worker $instanceNo\n" ; exit 1; }
+      elif [[ $role == 'd' ]]
+        then
+          instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+          mtype=linux
+          instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+          [[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no MSR $instanceNo\n" ; exit 1; }
+      else
+          echo "wrong role"
+          return 1
+      fi
+  elif [[ $1 =~ win[[:digit:]] ]]
+    then
+    instanceNo=$(echo $1 | grep -o . | tail -n 1)
+    instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+    mtype=win
+  else
+    instanceDNS=$1
+    instanceName=$1
+    mtype=linux
+  fi
+
+  if [[ $mtype == 'linux' ]]
+    then
+      printf "\n Logging into $instanceName...\n....\n"
+      ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+  else
+    if [[ $2 -eq 0 ]]
+      then
+      launchpad exec --interactive --target $instanceDNS
+    else
+      launchpad exec --target $instanceDNS $2
+    fi
+  fi
+}
 connect-stripped() {
-
-
   if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
   then
     amiUserName="ubuntu"
@@ -498,12 +598,12 @@ t-show-dns-managers() {
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), PublicDNS: .attributes.public_dns}' 2>/dev/null
 	}
-t-show-dns-msrs() { 
+t-show-dns-workers() { 
 	printf "\n\n MSR Nodes: \n"
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), PublicDNS: .attributes.public_dns}' 2>/dev/null
 	}
-t-show-dns-workers() { 
+t-show-dns-msrs() { 
 	printf "\n\n Workers Nodes: \n"
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | { Name: .attributes.tags.Name, PublicDNS: .attributes.public_dns}' 2>/dev/null
@@ -694,7 +794,9 @@ t-show-all() {
 	printf "\n\n Windows Worker Nodes: \n"
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="winNode") | .instances[] | { Name: .attributes.tags.Name, Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
-
+	printf "\n\n MSR Storage NFS Node: \n"
+	echo "-------------------------------------------------------------------------------"
+	cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | { Name: .attributes.tags.Name, PublicDNS: .attributes.public_dns, }' 2>/dev/null
 }
 ### t exec etcdctl
 t-exec-etcdctl() {
