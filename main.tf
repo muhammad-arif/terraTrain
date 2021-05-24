@@ -29,7 +29,7 @@ locals {
 data "aws_subnet" "selected" {
   filter {
     name   = "availability-zone"
-    values = ["*c"]
+    values = ["*a"]
   }
   filter {
     name   = "default-for-az"
