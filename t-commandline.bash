@@ -533,6 +533,69 @@ t-gen-msr_images() {
     docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1 || return 1
     docker push $msr/$uname/git --all-tags || return 1
 }
+t-gen-msr_orgs() {
+	# Logging to MSR
+    printf "\n YOU NEED TO ADD LICENSE TO MSR BEFORE RUNNING THIS COMMAND\n"
+    sleep 1
+    UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+    uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+    pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+    auth=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+    msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+    curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
+    update-ca-certificates
+    docker login $msr -u $uname -p $pass
+    curl -k -u $uname:$pass -X POST https://$msr/api/v0/meta/settings -H "accept: application/json" -H "content-type: application/json" -d "{ \"createRepositoryOnPush\": true}" &>/dev/null
+    printf "\nCreating an Organization"
+	curl -k -u $uname:$pass -XPOST https://$msr/enzi/v0/accounts -H 'content-type: application/json'  -d '{"isOrg" : true, "name" : "mirantis" }'
+	curl -k -u $uname:$pass -XPOST https://$msr/enzi/v0/accounts -H 'content-type: application/json'  -d '{"isOrg" : true, "name" : "docker" }'
+
+    # Pulling and pushing images
+    printf "\nStart Pulling and pushing\n"
+    docker pull nginx:alpine &> /dev/null 
+    docker tag nginx:alpine $msr/mirantis/nginx:alpine || return 1
+	docker tag nginx:alpine $msr/mirantis/nginx:alpine || return 1
+    docker pull nginx:latest &> /dev/null 
+    docker tag nginx:alpine $msr/mirantis/nginx:latest || return 1
+    docker push $msr/mirantis/nginx --all-tags || return 1
+
+    docker pull alpine:3.13.4 &> /dev/null 
+    docker tag alpine:3.13.4 $msr/mirantis/alpine:3.13.4  || return 1
+    docker pull alpine:latest &> /dev/null
+    docker tag alpine:latest $msr/mirantis/alpine:latest  || return 1
+    docker push $msr/mirantis/alpine --all-tags || return 1
+
+    docker pull redis:alpine3.13 &> /dev/null
+    docker tag redis:alpine3.13 $msr/docker/redis:alpine3.13 || return 1
+    docker pull redis:6.2.1-alpine3.13 &> /dev/null
+    docker tag redis:6.2.1-alpine3.13 $msr/docker/redis:6.2.1-alpine3.13 || return 1
+    docker push $msr/docker/redis --all-tags || return 1
+
+    docker pull busybox:unstable-musl &> /dev/null
+    docker tag busybox:unstable-musl $msr/docker/busybox:unstable-musl || return 1
+    docker pull busybox:uclibc &> /dev/null
+    docker tag busybox:uclibc $msr/docker/busybox:uclibc  || return 1
+    docker push $msr/docker/busybox --all-tags || return 1 
+
+    docker pull hello-world:latest &> /dev/null
+    docker tag hello-world:latest $msr/mirantis/hello-world:latest || return 1
+    docker pull hello-world:linux &> /dev/null
+    docker tag hello-world:linux $msr/mirantis/hello-world:linux || return 1
+    docker push $msr/mirantis/hello-world --all-tags || return 1
+    
+    docker pull haproxy:2.4-dev15-alpine &> /dev/null
+    docker tag haproxy:2.4-dev15-alpine $msr/docker/haproxy:2.4-dev15-alpine || return 1
+    docker pull haproxy:2.2.13-alpine &> /dev/null
+    docker tag  haproxy:2.2.13-alpine $msr/docker/haproxy:2.2.13-alpine || return 1
+    docker push $msr/docker/haproxy --all-tags || return 1
+
+
+    docker pull alpine/git:latest &> /dev/null
+    docker tag alpine/git:latest $msr/mirantis/git:latest || return 1
+    docker pull alpine/git:v2.30.1 &> /dev/null
+    docker tag alpine/git:v2.30.1 $msr/mirantis/git:v2.30.1 || return 1
+    docker push $msr/$mirantis/git --all-tags || return 1
+}
 #### t show ip managers|msrs|workers|windows|all 
 t-show-ip() {
   case "$1" in
@@ -819,12 +882,12 @@ t-exec-rethinkcli-mke() {
 	read echoedInput	
 	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
 	mke_private_ip=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.private_ip' 2>/dev/null)
-	connect-stripped $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq
+	connect-stripped $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq .
 	}
 t-exec-rethinkcli-msr() {
 	read echoedInput
 	msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
-	connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000001 -v dtr-ca-000000000001:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq
+	connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000001 -v dtr-ca-000000000001:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq .
 }
 ##### 1st level usage function : 
 usage1() {
@@ -935,6 +998,8 @@ if [ $# -eq 2 ]; then
 		 k8s-service|k8s) t-gen-k8s_service
 		                exit;;
 		 msr-images|mi) t-gen-msr_images
+		               exit;;
+		msr-orgs|mo) t-gen-msr_orgs
 		               exit;;
 		  *) echo "t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images"
 		 esac
