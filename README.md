@@ -27,17 +27,17 @@ What do you need before using this?
     3. Internet Connection
     4. AWS account
 # TLDR;
-1. Clone the repo or download the zip file 
-2. Unzip the file somehwere and cd into the terraTrain directory
+1. Clone the repo or download the zip file `git clone git@github.com:muhammad-arif/terraTrain.git`
+2. Unzip the directory or change directory to `terraTrain`
 3. Build the image with `sudo docker build -t terratrain .` (this is the most time consuming part)
 4. Run the container wiht `sudo docker run -it terratrain`
 5. Now copy your AWS env variable commands and paste your AWS credentials inside the container
 6. Now edit the `config.tfvars` file according to your need
-7. Create your cluster with `tt-run` command
-8. Check your installed components with `tt-show` command.
+7. Create your lab environment with `t deploy lab` command
+8. Check your installed components with `t show all` command.
 9. SSH to the desired node with `connect m1` or `connect w1` or `connect public-dns`
-10. To generate client bundle use `tt-genClientBundle` command.
-11. To remove all the components of the cluster use `tt-purge` command.
+10. To generate client bundle use `t gen cb` command.
+11. To remove all the components of the cluster use `t destroy lab` command.
 
 # Table of Contents
 - [Welcome to terraTrain](#welcome-to-terratrain)
