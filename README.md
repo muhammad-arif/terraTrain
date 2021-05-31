@@ -29,7 +29,7 @@ What do you need before using this?
 1. Pull the image with `docker pull ar1f/terratrain:latest` 
 2. Run the container with `docker run -it terratrain`
 3. Now copy your AWS env variable commands and paste your AWS credentials inside the container
-4. Now edit the `config.tfvars` file according to your needClone the repo or download the zip file `git clone git@github.com:muhammad-arif/terraTrain.git`
+4. Now edit the `config.tfvars` file according to your need
 5.  Create your lab environment with `t deploy lab` command. The installation process will take a bit more time. To check the installation logs run `tail -f -n+1 /tmp/mke-installation.log`
 6.  Check your installed components with `t show all` command.
 7.  SSH to the desired node with `connect m1` or `connect w1` or `connect public-dns`
