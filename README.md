@@ -26,7 +26,7 @@ What do you need before using this?
     3. Internet Connection
     4. AWS account
 # TLDR;
-1. Pull the image with `docker pull ar1f/terratrain:latest` 
+1. Pull the image with `docker pull cgroups/terratrain:latest` 
 2. Run the container with `docker run -it terratrain`
 3. Now copy your AWS env variable commands and paste your AWS credentials inside the container
 4. Now edit the `config.tfvars` file according to your need
