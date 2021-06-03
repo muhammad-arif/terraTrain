@@ -78,7 +78,7 @@ What do you need before using this?
 
 Pull the Image from the dockerhub
 ```
-docker pull ar1f/terratrain:latest
+docker pull cgroups/terratrain:latest
 ```
 Set the id of the case you are working on by creating a variable so that you can find and relate with the container 
 ```
@@ -86,7 +86,7 @@ CASEID=40705683
 ```
 Run following command to get into the terraTrain container,
 ```
-sudo docker run -it --hostname case-${CASEID} --name case_${CASEID} ar1f/terratrain:latest
+sudo docker run -it --hostname case-${CASEID} --name case_${CASEID} cgroups/terratrain:latest
 ```
 Then you will be entered into the terraTrain environment, something like the following,
 ```
