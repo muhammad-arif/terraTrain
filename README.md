@@ -165,12 +165,12 @@ Verbs:
 4) status: to check the cloud instance status 
 	t status managers		-> To check the status of manager nodes instances
 	t status msrs			-> To check the status of MSR nodes instances
-	t status workeres		-> To check the status of worker nodes instances
+	t status workers		-> To check the status of worker nodes instances
 	t status windows		-> To check the status of Windows worker nodes instances
 5) stop: to stop the cloud instances
 	t stop managers		-> To stop the manager nodes instances
 	t stop msrs			-> To stop MSR nodes instances
-	t stop workeres		-> To stop worker nodes instances
+	t stop workers		-> To stop worker nodes instances
 	t stop windows			-> To stop Windows worker nodes instances
 6) gen : to generate different tailored requirements
 	t gen client-bundle		-> To generate client bundle
