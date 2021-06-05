@@ -1,9 +1,9 @@
 # AWS Info
-region=""                       # choose your region eg eu-central-1, or ap-east-1, or us-east-1
-name=""                         # Something to identify your instances
-caseNo=""                       # you can specify your case no here (optional)
-os_name=""                      # use "ubuntu" or  "redhat" or "centos"
-os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
+region="ap-southeast-1"                       # choose your region eg eu-central-1, or ap-east-1, or us-east-1
+name="arif"                         # Something to identify your instances
+caseNo="452315"                       # you can specify your case no here (optional)
+os_name="redhat"                      # use "ubuntu" or  "redhat" or "centos"
+os_version="7.9"                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
 
 # Managers Info
 manager_count="3"
