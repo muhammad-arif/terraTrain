@@ -1,7 +1,7 @@
 # AWS Info
-region=""                       # choose your region eg eu-central-1, or ap-east-1, or us-east-1 etc
-name=""                         # Something to identify your instances, can be your username like bob-geldof
-caseNo=""                       # you can specify your case no here. Later you can find it by case no (can be left empty)
+region=""                       # choose your region eg eu-central-1, or ap-east-1, or us-east-1
+name=""                         # Something to identify your instances
+caseNo=""                       # you can specify your case no here (optional)
 os_name=""                      # use "ubuntu" or  "redhat" or "centos"
 os_version=""                   # for ubuntu 16.04,18,04 etc. for redhat 7.8, 7.1, 8.1
 
@@ -12,7 +12,7 @@ manager_instance_type="c4.xlarge"
 # MSR  Info
 msr_count="3"
 msr_instance_type="c4.xlarge"
-nfs_backend="0"                 # 1 for true and 0 for no
+nfs_backend="0"                 # 1 for true and 0 for false
 
 # Workers Info
 worker_count="3"
@@ -21,7 +21,7 @@ win_worker_count="0"
 win_worker_instance_type="c4.xlarge"
 
 # MKE MSR MCR info
-# Please change only the following informations if you want to use `tt-reinstall`.
+# Please change only the following informations if you want to use `t deploy cluster`.
 mcr_version="19.03.14"          # Please use specific minor engine version.
 mke_version="3.3.4"             # MKE Version
 msr_version="2.8.2"             # MSR Version
