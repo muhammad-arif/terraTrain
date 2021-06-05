@@ -195,7 +195,24 @@ Actors:
 4) windows: all the windows worker nodes of the MKE cluster.
 		Nicknames: wi, win, windows, winworker, winworkers, thing-that-breaks
 ```
+# connect Command Line Tool reference 
+Following is the reference,
+```
+NAME
+	connect - a wrapper for ssh
 
+SYNOPSIS
+	connect [lab-resources | public-dns] [command]
+	connect m1 “docker ps --filter name=ucp”
+
+DESCRIPTIONS
+
+Lab Resources,
+Managers: 	m1, m2, m3
+Workeres: 	w1, w2, w3
+Msrs:		d1, d2, d3
+Windows:	win1, win2, win3
+```
 # A few concepts
 ## Terratrain Workflow
 Terratrain is a very minimal platform consists of multiple tools.
