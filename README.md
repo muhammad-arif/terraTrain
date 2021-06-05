@@ -26,8 +26,8 @@ What do you need before using this?
     3. Internet Connection
     4. AWS account
 # TLDR;
-1. Pull the image with `docker pull cgroups/terratrain:latest` 
-2. Run the container with `docker run -it terratrain`
+1. Pull the image with `docker pull cgroups/terratrain` 
+2. Run the container with `docker run -it cgroups/terratrain`
 3. Now copy your AWS env variable commands and paste your AWS credentials inside the container
 4. Now edit the `config.tfvars` file according to your need
 5.  Create your lab environment with `t deploy lab` command. The installation process will take a bit more time. To check the installation logs run `tail -f -n+1 /tmp/mke-installation.log`
@@ -146,13 +146,13 @@ SYNOPSIS
 
 DESCRIPTIONS
 Verbs:
-1) deploy : to deploy resoruces. (cloud instances | MKE cluster)
+1) deploy : to deploy resources (cloud instances | MKE cluster)
 	t deploy lab			-> To deploy the Lab (cloud instances + MKE cluster)
 	t deploy cluster		-> To deploy the MKE cluster (an existing cloud instances should be present)
 	t deploy instances		-> To deploy the Cloud instances
 2) destroy: to destroy resources (cloud instances | MKE cluster)
 	t destroy lab			-> To destroy the Lab (cloud instances + MKE cluster)
-	t destroy cluster		-> To destroy the MKE cluster (the cloud instances would not be destoryed)
+	t destroy cluster		-> To destroy the MKE cluster (the cloud instances would not be destroyed)
 3) show : to show the metadata of resources
 	t show all			-> To show all information about the cluster
 	t show versions 		-> To show the versions of the resources
@@ -165,12 +165,12 @@ Verbs:
 4) status: to check the cloud instance status 
 	t status managers		-> To check the status of manager nodes instances
 	t status msrs			-> To check the status of MSR nodes instances
-	t status workeres		-> To check the status of worker nodes instances
+	t status workers		-> To check the status of worker nodes instances
 	t status windows		-> To check the status of Windows worker nodes instances
 5) stop: to stop the cloud instances
 	t stop managers		-> To stop the manager nodes instances
 	t stop msrs			-> To stop MSR nodes instances
-	t stop workeres		-> To stop worker nodes instances
+	t stop workers		-> To stop worker nodes instances
 	t stop windows			-> To stop Windows worker nodes instances
 6) gen : to generate different tailored requirements
 	t gen client-bundle		-> To generate client bundle
@@ -195,7 +195,24 @@ Actors:
 4) windows: all the windows worker nodes of the MKE cluster.
 		Nicknames: wi, win, windows, winworker, winworkers, thing-that-breaks
 ```
+# connect Command Line Tool reference 
+Following is the reference,
+```
+NAME
+	connect - a wrapper for ssh
 
+SYNOPSIS
+	connect [lab-resources | public-dns] [command]
+	connect m1 “docker ps --filter name=ucp”
+
+DESCRIPTIONS
+
+Lab Resources,
+Managers: 	m1, m2, m3
+Workeres: 	w1, w2, w3
+Msrs:		d1, d2, d3
+Windows:	win1, win2, win3
+```
 # A few concepts
 ## Terratrain Workflow
 Terratrain is a very minimal platform consists of multiple tools.
