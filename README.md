@@ -26,8 +26,8 @@ What do you need before using this?
     3. Internet Connection
     4. AWS account
 # TLDR;
-1. Pull the image with `docker pull cgroups/terratrain:latest` 
-2. Run the container with `docker run -it terratrain`
+1. Pull the image with `docker pull cgroups/terratrain` 
+2. Run the container with `docker run -it cgroups/terratrain`
 3. Now copy your AWS env variable commands and paste your AWS credentials inside the container
 4. Now edit the `config.tfvars` file according to your need
 5.  Create your lab environment with `t deploy lab` command. The installation process will take a bit more time. To check the installation logs run `tail -f -n+1 /tmp/mke-installation.log`
