@@ -146,13 +146,13 @@ SYNOPSIS
 
 DESCRIPTIONS
 Verbs:
-1) deploy : to deploy resoruces. (cloud instances | MKE cluster)
+1) deploy : to deploy resources (cloud instances | MKE cluster)
 	t deploy lab			-> To deploy the Lab (cloud instances + MKE cluster)
 	t deploy cluster		-> To deploy the MKE cluster (an existing cloud instances should be present)
 	t deploy instances		-> To deploy the Cloud instances
 2) destroy: to destroy resources (cloud instances | MKE cluster)
 	t destroy lab			-> To destroy the Lab (cloud instances + MKE cluster)
-	t destroy cluster		-> To destroy the MKE cluster (the cloud instances would not be destoryed)
+	t destroy cluster		-> To destroy the MKE cluster (the cloud instances would not be destroyed)
 3) show : to show the metadata of resources
 	t show all			-> To show all information about the cluster
 	t show versions 		-> To show the versions of the resources
