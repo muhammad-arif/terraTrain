@@ -19,189 +19,188 @@ REVERSE=$(tput smso)            # ${REVERSE}
 UNDERLINE=$(tput smul)          # ${UNDERLINE}
 ### t deploy lab|cluster|instances  
 connect() {
-
-#validation check
-if [[ $# -eq 0 ]]
-then
-printf '
-Usage:
-
-Just to log in to a node. You can ssh into a node in following ways,
-
-1. With Role:
-
-For manager use m1, m2, m3 etc. 
-	Example: connect m1
-For workers use w1, w2, w3 etc. 
-Example: connect w2
-For msr use d1, d2, d3 etc. 
-	Example: connect d3
-For windows use win1, win2, win3 etc. 
-	Example: connect win3
-
-2. With Hostname:
-connect <nodes_public_dns/ip> 
-	Example: connect ec2-18-156-117-231.eu-central-1.compute.amazonaws.com
-
-To run a command inside a node connect <nodes_public_dns/ip/role> "<command-to-run-on-remote-machine>" 
-E.g: connect m1 "docker ps | grep ucp-kv"
-'
-	return 0;
-fi
-
-if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
-then
-	amiUserName="ubuntu"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
-then
-	amiUserName="ec2-user"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
-then
-	amiUserName="centos"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
-then
-	amiUserName="ec2-user"
-else
-	echo "wrong Operating System Name"
-fi
-
-
-
-count=$(echo $1 | grep -o . | wc -l)
-
-if [[ $count -eq 2 ]]
+	#validation check
+	if [[ $# -eq 0 ]]
 	then
-	role=$(echo $1 | grep -o . | head -n 1)
-	instanceNo=$(echo $1 | grep -o . | tail -n 1)
-	index=`expr $instanceNo - 1`
-	if [[ $role == 'm' ]]
-		then
-		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
-		mtype=linux
-		instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
-		[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no manager $instanceNo\n" ; exit 1; }
-	elif [[ $role == 'w' ]]
-		then
-		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
-		mtype=linux
-		instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
-		[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no worker $instanceNo\n" ; exit 1; }
-	elif [[ $role == 'd' ]]
-		then
-		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
-		mtype=linux
-		instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
-		[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no MSR $instanceNo\n" ; exit 1; }
-	else
-		echo "wrong role"
-		return 1
+	printf '
+	Usage:
+
+	Just to log in to a node. You can ssh into a node in following ways,
+
+	1. With Role:
+
+	For manager use m1, m2, m3 etc. 
+		Example: connect m1
+	For workers use w1, w2, w3 etc. 
+	Example: connect w2
+	For msr use d1, d2, d3 etc. 
+		Example: connect d3
+	For windows use win1, win2, win3 etc. 
+		Example: connect win3
+
+	2. With Hostname:
+	connect <nodes_public_dns/ip> 
+		Example: connect ec2-18-156-117-231.eu-central-1.compute.amazonaws.com
+
+	To run a command inside a node connect <nodes_public_dns/ip/role> "<command-to-run-on-remote-machine>" 
+	E.g: connect m1 "docker ps | grep ucp-kv"
+	'
+		return 0;
 	fi
-elif [[ $1 =~ win[[:digit:]] ]]
-	then
-	instanceNo=$(echo $1 | grep -o . | tail -n 1)
-	instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
-	mtype=win
-else
-	instanceDNS=$1
-	instanceName=$1
-	mtype=linux
-fi
 
-if [[ $mtype == 'linux' ]]
+	if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
 	then
-	printf "\n Logging into $instanceName...\n....\n"
-	ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
-else
-	if [[ $2 -eq 0 ]]
+		amiUserName="ubuntu"
+	elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
 	then
-	launchpad exec --interactive --target $instanceDNS
+		amiUserName="ec2-user"
+	elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+	then
+		amiUserName="centos"
+	elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+	then
+		amiUserName="ec2-user"
 	else
-	launchpad exec --target $instanceDNS $2
+		echo "wrong Operating System Name"
 	fi
-fi
+
+
+
+	count=$(echo $1 | grep -o . | wc -l)
+
+	if [[ $count -eq 2 ]]
+		then
+		role=$(echo $1 | grep -o . | head -n 1)
+		instanceNo=$(echo $1 | grep -o . | tail -n 1)
+		index=`expr $instanceNo - 1`
+		if [[ $role == 'm' ]]
+			then
+			instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+			mtype=linux
+			instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+			[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no manager $instanceNo\n" ; exit 1; }
+		elif [[ $role == 'w' ]]
+			then
+			instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+			mtype=linux
+			instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+			[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no worker $instanceNo\n" ; exit 1; }
+		elif [[ $role == 'd' ]]
+			then
+			instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+			mtype=linux
+			instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+			[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no MSR $instanceNo\n" ; exit 1; }
+		else
+			echo "wrong role"
+			return 1
+		fi
+	elif [[ $1 =~ win[[:digit:]] ]]
+		then
+		instanceNo=$(echo $1 | grep -o . | tail -n 1)
+		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+		mtype=win
+	else
+		instanceDNS=$1
+		instanceName=$1
+		mtype=linux
+	fi
+
+	if [[ $mtype == 'linux' ]]
+		then
+		printf "\n Logging into $instanceName...\n....\n"
+		ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+	else
+		if [[ $2 -eq 0 ]]
+		then
+		launchpad exec --interactive --target $instanceDNS
+		else
+		launchpad exec --target $instanceDNS $2
+		fi
+	fi
 }
 connect-stripped() {
-if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
-then
-	amiUserName="ubuntu"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
-then
-	amiUserName="ec2-user"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
-then
-	amiUserName="centos"
-elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
-then
-	amiUserName="ec2-user"
-else
-	echo "wrong Operating System Name"
-fi
-
-
-
-count=$(echo $1 | grep -o . | wc -l)
-
-if [[ $count -eq 2 ]]
+	if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
 	then
-	role=$(echo $1 | grep -o . | head -n 1)
-	instanceNo=$(echo $1 | grep -o . | tail -n 1)
-	index=`expr $instanceNo - 1`
-	if [[ $role == 'm' ]]
-		then
-		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
-		mtype=linux
-		instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
-		[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no manager $instanceNo\n" ; exit 1; }
-	elif [[ $role == 'w' ]]
-		then
-		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
-		mtype=linux
-		instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
-		[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no worker $instanceNo\n" ; exit 1; }
-	elif [[ $role == 'd' ]]
-		then
-		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
-		mtype=linux
-		instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
-		[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no MSR $instanceNo\n" ; exit 1; }
+		amiUserName="ubuntu"
+	elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+	then
+		amiUserName="ec2-user"
+	elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+	then
+		amiUserName="centos"
+	elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+	then
+		amiUserName="ec2-user"
 	else
-		echo "wrong role"
-		return 1
+		echo "wrong Operating System Name"
 	fi
-elif [[ $1 =~ win[[:digit:]] ]]
-	then
-	instanceNo=$(echo $1 | grep -o . | tail -n 1)
-	instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
-	mtype=win
-else
-	instanceDNS=$1
-	instanceName=$1
-	mtype=linux
-fi
 
-if [[ $mtype == 'linux' ]]
-	then
-	ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
-else
-	if [[ $2 -eq 0 ]]
-	then
-	launchpad exec --interactive --target $instanceDNS
+
+
+	count=$(echo $1 | grep -o . | wc -l)
+
+	if [[ $count -eq 2 ]]
+		then
+		role=$(echo $1 | grep -o . | head -n 1)
+		instanceNo=$(echo $1 | grep -o . | tail -n 1)
+		index=`expr $instanceNo - 1`
+		if [[ $role == 'm' ]]
+			then
+			instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+			mtype=linux
+			instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+			[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no manager $instanceNo\n" ; exit 1; }
+		elif [[ $role == 'w' ]]
+			then
+			instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+			mtype=linux
+			instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+			[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no worker $instanceNo\n" ; exit 1; }
+		elif [[ $role == 'd' ]]
+			then
+			instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.public_dns')
+			mtype=linux
+			instanceName=$(cat /terraTrain/terraform.tfstate |  jq --argjson i $index -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$i) | .attributes.tags.Name')
+			[[ -z "$instanceDNS" ]] && { printf "Don't test me B)\nThere is no MSR $instanceNo\n" ; exit 1; }
+		else
+			echo "wrong role"
+			return 1
+		fi
+	elif [[ $1 =~ win[[:digit:]] ]]
+		then
+		instanceNo=$(echo $1 | grep -o . | tail -n 1)
+		instanceDNS=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+		mtype=win
 	else
-	launchpad exec --target $instanceDNS $2
+		instanceDNS=$1
+		instanceName=$1
+		mtype=linux
 	fi
-fi
+
+	if [[ $mtype == 'linux' ]]
+		then
+		ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+	else
+		if [[ $2 -eq 0 ]]
+		then
+		launchpad exec --interactive --target $instanceDNS
+		else
+		launchpad exec --target $instanceDNS $2
+		fi
+	fi
 }
 t-deploy() {
-case "$1" in
-	"lab") t-deploy-lab 
-		exit;;
-	"cluster") t-deploy-cluster
-		exit;;
-	instances|inst|ins|ec2) t-deploy-instances
-		exit;;
-	*) echo "t deploy lab|cluster|instances"
-	exit ;;
-esac
+	case "$1" in
+		"lab") t-deploy-lab 
+			exit;;
+		"cluster") t-deploy-cluster
+			exit;;
+		instances|inst|ins|ec2) t-deploy-instances
+			exit;;
+		*) echo "t deploy lab|cluster|instances"
+		exit ;;
+	esac
 }
 t-deploy-lab() { 
 	var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
@@ -257,16 +256,16 @@ t-deploy-instances() {
 }
 ### t destroy lab|cluster  DONE 
 t-destroy() {
-case "$1" in
-	"lab") t-destroy-lab 
+	case "$1" in
+		"lab") t-destroy-lab 
+			exit;;
+		"cluster") t-destroy-cluster
+			exit;;
+		"instances") t-destroy-lab 
+			exit;;
+		*) echo "t destroy lab|cluster"
 		exit;;
-	"cluster") t-destroy-cluster
-		exit;;
-	"instances") t-destroy-lab 
-		exit;;
-	*) echo "t destroy lab|cluster"
-	exit;;
-esac
+	esac
 }
 t-destroy-lab() {
 	printf "\n This will destroy all of the cloud instances. \n you have about 5 sec to press ctrl+c :D"
@@ -310,24 +309,42 @@ t-destroy-cluster() {
 ### t stop managers|msrs|workers|windows   DONE 
 ### Have not implemented the : t stop manager1 (t stop manager 1)
 t-stop() {
-case "$1" in
-	m|manager|managers|man) t-stop-managers
-			exit;;
-	ms|msr|msrs|dtrs|dtr|d)  t-stop-msrs
-			exit;;
-	w|wkr|wrk|work|worker|workers) t-stop-workers
-			exit;;
-	wi|win|windows|winworker|winworkers) t-stop-windows
-			exit;;
-	a|al|all) 	t-stop-windows ; t-stop-workers ; t-stop-msrs ; t-stop-managers
-			exit;;
-	*) echo "t stop managers|msrs|workers|windows"
-	exit ;;
-esac
+	case "$1" in
+		m|manager|managers|man) t-stop-managers
+				exit;;
+		ms|msr|msrs|dtrs|dtr|d)  t-stop-msrs
+				exit;;
+		w|wkr|wrk|work|worker|workers) t-stop-workers
+				exit;;
+		wi|win|windows|winworker|winworkers) t-stop-windows
+				exit;;
+		m1|manager1|managers1|man1) t-stop-manager-1
+				exit;;
+		m2|manager2|managers2|man2) t-stop-manager-2
+				exit;;
+		m3|manager3|managers3|man3) t-stop-manager-3
+				exit;;
+		ms1|msr1|msrs1|dtrs1|dtr1|d1)  t-stop-msr-1
+				exit;;
+		ms2|msr2|msrs2|dtrs2|dtr2|d2)  t-stop-msr-2
+				exit;;
+		ms3|msr3|msrs3|dtrs3|dtr3|d3)  t-stop-msr-3
+				exit;;						
+		w1|wkr1|work1|worker1|workers1) t-stop-worker-1
+				exit;;
+		w2|wkr2|work2|worker2|workers2) t-stop-worker-2
+				exit;;
+		w3|wkr3|work3|worker3|workers3) t-stop-worker-3
+				exit;;
+		a|al|all) 	t-stop-windows ; t-stop-workers ; t-stop-msrs ; t-stop-managers
+				exit;;
+		*) echo "t stop managers|msrs|workers|windows|w1|m2|d3|msr3|manager1|all"
+		exit ;;
+	esac
 }
 t-stop-managers() { 
 	echo "t-stop-managers was called"
-	printf "\n${REVERSE}[Step-1]${YELLOW} Stopping the Manager instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Stopping]${YELLOW} Manager instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="manager") |.attributes.id ')
 		do 
@@ -338,8 +355,39 @@ t-stop-managers() {
 		printf "\n------\n"
 	done
 }
+t-stop-manager-1() { 
+	printf "\n${REVERSE}[Stopping]${YELLOW} Manager instance 1 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	mgr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $mgr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $mgr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-stop-manager-2() { 
+	printf "\n${REVERSE}[Stopping]${YELLOW} Manager instance 2 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	mgr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==1) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $mgr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $mgr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-stop-manager-3() { 
+	printf "\n${REVERSE}[Stopping]${YELLOW} Manager instance 3 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	mgr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==2) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $mgr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $mgr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+
 t-stop-msrs() { 
-	printf "\n${REVERSE}[Step-1]${YELLOW} Stopping the MSR instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Stopping]${GREEN} MSR instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="msr") |.attributes.id ')
 		do 
@@ -350,8 +398,39 @@ t-stop-msrs() {
 		printf "\n------\n"
 	done
 }
+t-stop-msr-1() { 
+	printf "\n${REVERSE}[Stopping]${GREEN} MSR instance 1 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	msr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="msr") | select(.index_key==0) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $msr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $msr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-stop-msr-2() { 
+	printf "\n${REVERSE}[Stopping]${GREEN} MSR instance 2 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	msr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="msr") | select(.index_key==1) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $msr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $msr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-stop-msr-3() { 
+	printf "\n${REVERSE}[Stopping]${GREEN} MSR instance 3 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	msr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="msr") | select(.index_key==2) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $msr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $msr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+
 t-stop-workers() { 
-	printf "\n${REVERSE}[Step-1]${YELLOW} Stopping the Worker instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Stopping]${MAGENTA} Worker instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="worker") |.attributes.id ')
 		do 
@@ -362,8 +441,38 @@ t-stop-workers() {
 		printf "\n------\n"
 	done
 }
+t-stop-worker-1() { 
+	printf "\n${REVERSE}[Stopping]${MAGENTA} Worker instance 1 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	wkr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="worker") | select(.index_key==0) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $wkr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $wkr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-stop-worker-2() { 
+	printf "\n${REVERSE}[Stopping]${MAGENTA} Stopping the Worker instance 2 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	wkr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="worker") | select(.index_key==1) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $wkr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $wkr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-stop-worker-3() { 
+	printf "\n${REVERSE}[Stopping]${MAGENTA} Worker instance 3 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	wkr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="worker") | select(.index_key==2) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $wkr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 stop-instances --instance-ids $wkr_id --region $region | jq '.StoppingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
 t-stop-windows() { 
-	printf "\n${REVERSE}[Step-1]${YELLOW} Stopping the Windows Worker instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Stopping]${CYAN} Windows Worker instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="win-worker") |.attributes.id ')
 		do 
@@ -376,24 +485,41 @@ t-stop-windows() {
 }
 # t start managers|msrs|workers|windows DONE
 t-start() {
-case "$1" in
-	m|manager|managers|man) t-start-managers
-			exit;;
-	ms|msr|msrs|dtrs|dtr|d)  t-start-msrs
-			exit;;
-	w|wkr|wrk|work|worker|workers) t-start-workers
-			exit;;
-	wi|win|windows|winworker|winworkers) t-start-windows
-			exit;;
-	a|al|all) 	t-start-windows ; t-start-workers ; t-start-msrs ; t-start-managers
-			exit;;
-	*) echo "t stop managers|msrs|workers|windows"
-	exit ;;
-esac
+	case "$1" in
+		m|manager|managers|man) t-start-managers
+				exit;;
+		ms|msr|msrs|dtrs|dtr|d)  t-start-msrs
+				exit;;
+		w|wkr|wrk|work|worker|workers) t-start-workers
+				exit;;
+		wi|win|windows|winworker|winworkers) t-start-windows
+				exit;;
+		m1|manager1|managers1|man1) t-start-manager-1
+				exit;;
+		m2|manager2|managers2|man2) t-start-manager-2
+				exit;;
+		m3|manager3|managers3|man3) t-start-manager-3
+				exit;;
+		ms1|msr1|msrs1|dtrs1|dtr1|d1)  t-start-msr-1
+				exit;;
+		ms2|msr2|msrs2|dtrs2|dtr2|d2)  t-start-msr-2
+				exit;;
+		ms3|msr3|msrs3|dtrs3|dtr3|d3)  t-start-msr-3
+				exit;;						
+		w1|wkr1|work1|worker1|workers1) t-start-worker-1
+				exit;;
+		w2|wkr2|work2|worker2|workers2) t-start-worker-2
+				exit;;
+		w3|wkr3|work3|worker3|workers3) t-start-worker-3
+				exit;;
+		a|al|all) 	t-start-windows ; t-start-workers ; t-start-msrs ; t-start-managers
+				exit;;
+		*) echo "t stop managers|msrs|workers|windows|w1|m2|d3|msr3|manager1|all"
+		exit ;;
+	esac
 }
 t-start-managers() { 
-	echo "t-stop-managers was called"
-	printf "\n${REVERSE}[Step-1]${YELLOW} Starting the Manager instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Starting] ${YELLOW} Manager instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="manager") |.attributes.id ')
 		do 
@@ -404,8 +530,40 @@ t-start-managers() {
 		printf "\n------\n"
 	done
 }
+
+t-start-manager-1() { 
+	printf "\n${REVERSE}[Starting] ${YELLOW} Manager instance 1 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	mgr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $mgr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $mgr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-start-manager-2() { 
+	printf "\n${REVERSE}[Starting] ${YELLOW} Manager instance 2 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	mgr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==1) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $mgr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $mgr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-start-manager-3() { 
+	printf "\n${REVERSE}[Starting] ${YELLOW} Manager instance 3 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	mgr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==2) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $mgr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $mgr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+
 t-start-msrs() { 
-	printf "\n${REVERSE}[Step-1]${YELLOW} Starting the MSR instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Starting] ${GREEN} MSR instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="msr") |.attributes.id ')
 		do 
@@ -416,8 +574,39 @@ t-start-msrs() {
 		printf "\n------\n"
 	done
 }
+t-start-msr-1() { 
+	printf "\n${REVERSE}[Starting] ${GREEN} MSR instance 1 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	msr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="msr") | select(.index_key==0) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $msr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $msr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-start-msr-2() { 
+	printf "\n${REVERSE}[Starting] ${GREEN} MSR instance 2 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	msr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="msr") | select(.index_key==1) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $msr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $msr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-start-msr-3() { 
+	printf "\n${REVERSE}[Starting] ${GREEN}  MSR instance 3 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	msr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="msr") | select(.index_key==2) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $msr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $msr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+
 t-start-workers() { 
-	printf "\n${REVERSE}[Step-1]${YELLOW} Starting the Worker instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Starting] ${MAGENTA} Worker instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="worker") |.attributes.id ')
 		do 
@@ -428,8 +617,38 @@ t-start-workers() {
 		printf "\n------\n"
 	done
 }
+t-start-worker-1() { 
+	printf "\n${REVERSE}[Starting] ${MAGENTA} Worker instance 1 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	wkr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="worker") | select(.index_key==0) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $wkr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $wkr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-start-worker-2() { 
+	printf "\n${REVERSE}[Starting] ${MAGENTA} Worker instance 2 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	wkr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="worker") | select(.index_key==1) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $wkr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $wkr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
+t-start-worker-3() { 
+	printf "\n${REVERSE}[Starting] ${MAGENTA} Worker instance 3 ...${NORMAL}\n"
+	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	wkr_id=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | .instances[] | select(.attributes.tags.role=="worker") | select(.index_key==2) | .attributes.id')
+	printf "\nInstance Name: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq --arg instanceId $wkr_id '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.id==$instanceId) | .attributes.tags.Name' 
+	printf "\nInstance Status: "
+	aws ec2 start-instances --instance-ids $wkr_id --region $region | jq '.StartingInstances[] | .CurrentState.Name'
+	printf "\n------\n"
+}
 t-start-windows() { 
-	printf "\n${REVERSE}[Step-1]${YELLOW} Starting the Windows Worker instances...${NORMAL}\n"
+	printf "\n${REVERSE}[Starting] ${CYAN} Windows Worker instances...${NORMAL}\n"
 	region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
 	for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="win-worker") |.attributes.id ')
 		do 
@@ -918,7 +1137,7 @@ t-show-all() {
 	printf  '\e[1;34m%-6s\e[m' "MKE URL: "
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | ("https://" + .attributes.public_dns)' 2>/dev/null
 	printf  '\e[1;34m%-6s\e[m' "MSR URL: "
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | ("https://" + .attributes.public_dns)' 2>/dev/null
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0)  | ("https://" + .attributes.public_dns)' 2>/dev/null
 	printf '\e[1;34m%-6s\e[m' "Username: "
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
 	printf  '\e[1;34m%-6s\e[m' "Password: "
@@ -949,24 +1168,55 @@ t-exec-etcdctl() {
 #### t exec rethinkcli mke|msr
 t-exec-rethinkcli() {
 case "$1" in
-	"mke") t-exec-rethinkcli-mke
+
+	mke|m1|mgr1|manager1) t-exec-rethinkcli-mke-1 
 		exit;;
-	"msr") t-exec-rethinkcli-msr 
+	m2|mgr2|manager2) t-exec-rethinkcli-mke-2
+		exit;;
+	m3|mgr3|manager3) t-exec-rethinkcli-mke-3
+		exit;;
+	msr|dtr|d1|dtr1|msr1) t-exec-rethinkcli-msr-1 
+		exit;;
+	d2|dtr2|msr2) t-exec-rethinkcli-msr-2
+		exit;;
+	d3|dtr3|msr3) t-exec-rethinkcli-msr-3
 		exit;;
 	*) printf "\nUsage: \necho \"r.db('enzi').tableList()\" | t exec rethinkcli mke\necho \"r.db('dtr2').tableList()\" | t exec rethinkcli msr\n"
 	exit;;
 esac
 }	
-t-exec-rethinkcli-mke() {	
+t-exec-rethinkcli-mke-1() {	
 	read echoedInput	
 	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
 	mke_private_ip=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.private_ip' 2>/dev/null)
 	connect-stripped $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq .
-	}
-t-exec-rethinkcli-msr() {
+}
+t-exec-rethinkcli-mke-2() {	
+	read echoedInput	
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==1) | .attributes.public_dns' 2>/dev/null)
+	mke_private_ip=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.private_ip' 2>/dev/null)
+	connect-stripped $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq .
+}
+t-exec-rethinkcli-mke-3() {	
+	read echoedInput	
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==2) | .attributes.public_dns' 2>/dev/null)
+	mke_private_ip=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.private_ip' 2>/dev/null)
+	connect-stripped $UCP_URL "echo \"$echoedInput\" | sudo docker run --rm -i -e DB_ADDRESS=$mke_private_ip -v ucp-auth-api-certs:/tls squizzi/rethinkcli-ucp non-interactive" | jq .
+}
+t-exec-rethinkcli-msr-1() {
 	read echoedInput
-	msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+	msr=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
 	connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000001 -v dtr-ca-000000000001:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq .
+}
+t-exec-rethinkcli-msr-2() {
+	read echoedInput
+	msr=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==1) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000002 -v dtr-ca-000000000002:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq .
+}
+t-exec-rethinkcli-msr-3() {
+	read echoedInput
+	msr=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==2) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000003 -v dtr-ca-000000000003:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq .
 }
 ##### 1st level usage function : 
 usage1() {
@@ -1016,7 +1266,12 @@ Verbs:
 	t stop msrs			-> To stop MSR nodes instances
 	t stop workeres			-> To stop worker nodes instances
 	t stop windows			-> To stop Windows worker nodes instances
-6) gen : to generate different tailored requirements
+6) start: to stop the cloud instances
+	t start managers			-> To start the manager nodes instances
+	t start msrs			-> To start MSR nodes instances
+	t start workeres			-> To start worker nodes instances
+	t start windows			-> To start Windows worker nodes instances
+7) gen : to generate different tailored requirements
 	t gen client-bundle		-> To generate client bundle
 	t gen swarm-service		-> To generate dockercoin app as swarm service 
 	t gen k8s-service		-> To generate dockercoin app as k8s service
@@ -1025,7 +1280,7 @@ Verbs:
 	t gen msr-org			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
-7) exec : to execute specific task on the cluster
+8) exec : to execute specific task on the cluster
 	t exec rethinkcli msr		-> To get into the rethinkdb of primary MSR replica
 	t exec rethinkcli mke		-> To get into the rethinkdb of MKE leader node
 	t exec etcdctl			-> To get into the etcd db of the MKE leader node
