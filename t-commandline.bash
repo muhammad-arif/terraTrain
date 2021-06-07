@@ -894,6 +894,20 @@ t-gen-msr_orgs() {
 	docker tag alpine/git:v2.30.1 $msr/mirantis/git:v2.30.1 || return 1
 	docker push $msr/$mirantis/git --all-tags || return 1
 }
+#### t download toml|lab TODO
+t-download-toml() {
+  echo "t download toml was typed "
+}
+t-download-lab() {
+  echo "t download lab was typed "
+}
+#### t upload toml|lab TODO
+t-upload-toml() {
+  echo "t upload toml was typed "
+}
+t-upload-lab() {
+  echo "t upload lab was typed "
+}
 #### t show ip managers|msrs|workers|windows|all 
 t-show-ip() {
 case "$1" in
@@ -1227,6 +1241,8 @@ usage1() {
 #  echo "t show status|hostname managers|workers|msrs|windows "
 #  echo "t exec etcdctl "
 #  echo "t exec rethinkcli ..."
+#  echo "t download toml|lab "
+#  echo "t upload toml|lab "
 #  echo "  When you finish your work:"
 #  echo "t stop managers|workers|msrs|windows|manager1 "
 #  echo "t destroy lab|cluster "
@@ -1284,6 +1300,10 @@ Verbs:
 	t exec rethinkcli msr		-> To get into the rethinkdb of primary MSR replica
 	t exec rethinkcli mke		-> To get into the rethinkdb of MKE leader node
 	t exec etcdctl			-> To get into the etcd db of the MKE leader node
+8) upload|download : to upload or download a ucp-config.toml file, or a lab file that somebody else can use to create a similar container to yours,
+                     thus having the same info about the cluster-nodes that you have
+        t upload toml|lab
+	t download tmol|lab
 \nActors:
 1) managers: all the manager node of the MKE cluster.
 		Nicknames: m, mgr, manager, man, woman
@@ -1348,11 +1368,27 @@ gen)  # t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images
 exec) # t exec etcdctl
 		case "$2" in 
 		"etcdctl") t-exec-etcdctl  
-					exit ;; 
+				exit ;; 
 		*) echo "t exec etcdctl|rethinkcli "
 			exit ;;
 		esac		   
 		exit;;
+download|dnl) # t download toml|lab
+            case "$2" in  
+	    "toml") t-download-toml
+	           exit;;
+	    "lab") t-download-lab
+	           exit;;
+	    esac
+	  exit;;
+upload|upl) # t upload toml|lab 
+            case "$2" in 
+	    "toml") t-upload-toml
+	           exit;;
+	    "lab") t-upload-lab
+	           exit;;
+	    esac
+	  exit;;
 *) usage1
 	exit ;;
 esac 
