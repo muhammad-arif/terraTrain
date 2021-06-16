@@ -1,5 +1,5 @@
 # AWS Info
-region="ap-southeast-1"                       # choose your region eg eu-central-1, or ap-east-1, or us-east-1
+region="eu-central-1"                       # choose your region eg ap-southeast-1, or ap-east-1, or us-east-1
 name=""                         # Something to identify your instances
 caseNo="452315"                       # you can specify your case no here (optional)
 os_name="redhat"                      # use "ubuntu" or  "redhat" or "centos"
@@ -17,7 +17,7 @@ nfs_backend="0"                 # 1 for true and 0 for false
 # Workers Info
 worker_count="3"
 worker_instance_type="t2.micro"
-win_worker_count="1"
+win_worker_count="0"
 win_worker_instance_type="c4.xlarge"
 
 # MKE MSR MCR info
