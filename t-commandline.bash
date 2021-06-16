@@ -206,6 +206,7 @@ t-deploy-lab() {
 	var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 	/usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
 	printf "\n${REVERSE}[Step-1]${CYAN} Trying to spin up the instances on cloud...${NORMAL}\n"
+	cd /terraTrain
 	terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings || return 1 
 	#Exporting AMI name for global reachability
 	if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
@@ -271,6 +272,7 @@ t-destroy-lab() {
 	printf "\n This will destroy all of the cloud instances. \n you have about 5 sec to press ctrl+c :D"
 	sleep 5
 	printf "\n${REVERSE}[Step 1]${RED} Destroying Cloud Instances ${NORMAL}\n"
+	cd /terraTrain
 	terraform destroy -auto-approve -compact-warnings -var-file=/terraTrain/config.tfvars
 	echo " " > /terraTrain/launchpad.yaml
 }
@@ -676,72 +678,52 @@ t-gen-msr_login() {
 }
 t-gen-ldap_server() {
 	printf "\n${REVERSE}[Step-1] ${YELLOW} Installing LDAP server on the Leader ${NORMAL}\n"
-	connect m1 "docker container run -d -p 9090:80 -p 389:389 training/ldap:latest"
+	connect-stripped m1 "docker container run -d -p 9090:80 -p 389:389 --name ldap training/ldap:latest; sudo apt install ldap-utils -y;sudo yum install -y openldap openldap-clients "
 	printf "\nWaiting for 5 sec to service to be stable"
 	sleep 5
 	printf "\n${REVERSE}[Step-2] ${YELLOW} Checking if LDAP server is working or not ${NORMAL}\n"
 	LDAPSERVER=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
-	UNAME=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
-	PASSWORD=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
-	ldapsearch -x -b "cn=admin,dc=test,dc=com" -h $LDAPSERVER -p 389
-	if [ $? -eq 0]
+	UNAME=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+	PASSWORD=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+	connect-stripped m1 "ldapsearch -x -b \"cn=admin,dc=test,dc=com\" -h $LDAPSERVER -p 389"
+	if [ $? -ne 0 ]
 		then
 		printf "${RED}LDAP SERVER IS NOT WORKING. Dunno what happened ¯\_(ツ)_/¯\n ${NORMAL}"
 		exit
 	else
 		printf "\n${REVERSE}[Step-3] ${YELLOW} Listing all the users information from the LDAP SERVER.\n ${NORMAL}" 
-		ldapsearch -x -b "ou=Staff,dc=test,dc=com" -h $LDAPSERVER  -s sub "(objectClass=inetOrgPerson)"
+		connect-stripped m1 "ldapsearch -x -b "ou=Staff,dc=test,dc=com" -h $LDAPSERVER  -s sub \"(objectClass=inetOrgPerson)\""
 		curl  --compressed --insecure -u $UNAME:$PASSWORD https://$LDAPSERVER/enzi/v0/config/auth/ldap  \
-			-X 'PUT' \
-			-H 'accept: application/json' \
-			-H 'content-type: application/json;charset=UTF-8' \
-			--data-raw "
-			{
-				\"serverURL\":\"ldap://$LDAPSERVER\"
-				\"noSimplePagination\":false
-				\"startTLS\":false
-				\"rootCerts\":\"\"
-				\"tlsSkipVerify\":false,
-				\"readerDN\":\"uid=alpha,ou=Staff,dc=test,dc=com\"
-				"additionalDomains":[]
-				"userSearchConfigs":[{"scopeSubtree":true,"baseDN":"dc=test,dc=com","filter":"objectClass=inetOrgPerson","usernameAttr":"uid","fullNameAttr":"cn"}]
-				"adminSyncOpts":{"enableSync":false,"selectGroupMembers":false,"groupDN":"","groupMemberAttr":"","searchBaseDN":"","searchScopeSubtree":false,"searchFilter":""}
-				"syncSchedule":""
-				"jitUserProvisioning":true
-				"readerPassword":"password"
-			}
-			"   
+		-X 'PUT' \
+		-H 'accept: application/json' \
+		-H 'content-type: application/json;charset=UTF-8' \
+		--data-raw '
+		{
+			"serverURL":"ldap://localhost",
+			"noSimplePagination":false,
+			"startTLS":false,
+			"rootCerts":"",
+			"tlsSkipVerify":false,
+			"readerDN":"uid=alpha,ou=Staff,dc=test,dc=com",
+			"additionalDomains":[],
+			"userSearchConfigs":[{"scopeSubtree":true,"baseDN":"dc=test,dc=com","filter":"objectClass=inetOrgPerson","usernameAttr":"uid","fullNameAttr":"cn"}],
+			"adminSyncOpts":{"enableSync":false,"selectGroupMembers":false,"groupDN":"","groupMemberAttr":"","searchBaseDN":"","searchScopeSubtree":false,"searchFilter":""},
+			"syncSchedule":"",
+			"jitUserProvisioning":true,
+			"readerPassword":"password" 
+		}'
+		curl --compressed --insecure -u $UNAME:$PASSWORD https:///$LDAPSERVER/enzi/v0/config/auth -X 'PUT' -H 'accept: application/json' -H 'content-type: application/json;charset=UTF-8' --data-raw "{\"backend\":\"ldap\",\"samlEnabled\":false,\"samlLoginText\":\"Sign in with SAML\",\"scimEnabled\":false,\"managedPasswordDisabled\":false,\"managedPasswordFallbackUser\":\"$UNAME\"}" --compressed --insecure
 
 
 		printf "${REVERSE}[Step-3] ${YELLOW}Now follow the instruction to configure LDAP on your MKE Cluster ${NORMAL}
 
-1. Login to UCP as the admin user.
-
-2. Navigate admin -> Admin Settings -> Authentication and Authorization , and enable the LDAP
-Enabled.
-
-3. In the LDAP Server form, fill in:
-	• LDAP Server URL: ldap://$LDAPSERVER
-	• Reader DN: uid=alpha,ou=Staff,dc=test,dc=com
-	• Reader Password: password
-
-4. Click Add LDAP User Search Configurations + and fill in:
-	• Base DN: dc=test,dc=com
-	• Username Attribute: uid
-	• Fullname Attribute: cn
-	• Filter: objectClass=inetOrgPerson
-	• Check Search subtree instead of just one level
-	• Click Confirm
-
-5. Under LDAP Test Login, fill in:
-	• Username: bravo
-	• Password: password
-
-6. Still under LDAP Test Login, click Test . A successful login test should be reported.
-
-7. Under LDAP Sync Configuration, enter 24 for the Sync Interval (Hours) field.
-
-8. Click Save .
+Login to UCP with the following LDAP users,
+alpha
+bravo
+charlie
+delta
+foxrot
+Common password for all: password
 
 Other Informations:
 Ldapserver GUI: http://$LDAPSERVER:9090/phpldapadmin
@@ -750,7 +732,7 @@ Admin username: admin
 Admin Password: admin
 Orgs user Password: password
 To list all the user, run the following command or any of it's variation,
-ldapsearch -x -b "ou=Staff,dc=test,dc=com" -h $LDAPSERVER -p 389
+connect m1 \"ldapsearch -x -b \"ou=Staff,dc=test,dc=com\" -h $LDAPSERVER -p 389\"
 " 
 	fi
 }
@@ -824,12 +806,18 @@ t-gen-msr_images() {
 	docker tag  haproxy:2.2.13-alpine $msr/$uname/haproxy:2.2.13-alpine || return 1
 	docker push $msr/$uname/haproxy --all-tags || return 1
 
+	docker pull squizzi/rethinkcli-ucp &> /dev/null
+	docker tag squizzi/rethinkcli-ucp $msr/$uname/rethinkdcli:mke || return 1
+	docker pull dockerhubenterprise/rethinkcli:v2.2.0-ni &> /dev/null
+	docker tag  dockerhubenterprise/rethinkcli:v2.2.0-ni $msr/$uname/rethinkcli:msr || return 1
+	docker push $msr/$uname/rethinkcli --all-tags || return 1
 
-	docker pull alpine/git:latest &> /dev/null
-	docker tag alpine/git:latest $msr/$uname/git:latest || return 1
-	docker pull alpine/git:v2.30.1 &> /dev/null
-	docker tag alpine/git:v2.30.1 $msr/$uname/git:v2.30.1 || return 1
-	docker push $msr/$uname/git --all-tags || return 1
+	docker pull mysql:5.7.5 &> /dev/null
+	docker tag mysql:5.7.5 $msr/$uname/vulnerable:mysql || return 1
+	docker pull node:4.2.1 &> /dev/null
+	docker tag  node:4.2.1 $msr/$uname/vulnerable:nodejs || return 1
+	docker push $msr/$uname/vulnerable --all-tags || return 1
+
 }
 t-gen-msr_orgs() {
 	# Logging to MSR
@@ -887,12 +875,23 @@ t-gen-msr_orgs() {
 	docker tag  haproxy:2.2.13-alpine $msr/docker/haproxy:2.2.13-alpine || return 1
 	docker push $msr/docker/haproxy --all-tags || return 1
 
-
 	docker pull alpine/git:latest &> /dev/null
 	docker tag alpine/git:latest $msr/mirantis/git:latest || return 1
 	docker pull alpine/git:v2.30.1 &> /dev/null
 	docker tag alpine/git:v2.30.1 $msr/mirantis/git:v2.30.1 || return 1
 	docker push $msr/$mirantis/git --all-tags || return 1
+
+	docker pull squizzi/rethinkcli-ucp &> /dev/null
+	docker tag squizzi/rethinkcli-ucp $msr/$uname/rethinkdcli:mke || return 1
+	docker pull dockerhubenterprise/rethinkcli:v2.2.0-ni &> /dev/null
+	docker tag  dockerhubenterprise/rethinkcli:v2.2.0-ni $msr/$uname/rethinkcli:msr || return 1
+	docker push $msr/$uname/rethinkcli --all-tags || return 1
+
+	docker pull mysql:5.7.5 &> /dev/null
+	docker tag mysql:5.7.5 $msr/$uname/vulnerable:mysql || return 1
+	docker pull node:4.2.1 &> /dev/null
+	docker tag  node:4.2.1 $msr/$uname/vulnerable:nodejs || return 1
+	docker push $msr/$uname/vulnerable --all-tags || return 1
 }
 #### t download toml|lab TODO
 t-download-toml() {
