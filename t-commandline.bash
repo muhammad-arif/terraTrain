@@ -1295,15 +1295,20 @@ Verbs:
 	t gen msr-org			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
+	t gen ldap-server		-> To install and configure ldap server
+	t gen lab-config		-> To generate lab configuration to xfer the labs metadata
 8) exec : to execute specific task on the cluster
 	t exec rethinkcli msr		-> To get into the rethinkdb of primary MSR replica
 	t exec rethinkcli mke		-> To get into the rethinkdb of MKE leader node
 	t exec etcdctl			-> To get into the etcd db of the MKE leader node
-8) upload|download : to upload or download a ucp-config.toml file, or a lab file that somebody else can use to create a similar container to yours,
-                     thus having the same info about the cluster-nodes that you have
-        t upload toml|lab
-	t download tmol|lab
-\nActors:
+	t exec lab-config		-> To import lab configuration
+9) upload : to upload configurations
+	t upload toml m1		-> To upload the toml file to manager node 1
+10) download : to download configurations
+	t download toml m1		-> To download the toml file to manager node 1
+	t download client-bundle		-> To download the client bundle
+	
+Actors:
 1) managers: all the manager node of the MKE cluster.
 		Nicknames: m, mgr, manager, man, woman
 2) msrs: all the MSR nodes of the MKE cluster
