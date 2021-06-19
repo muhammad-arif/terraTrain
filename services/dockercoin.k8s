@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -32,7 +32,7 @@ spec:
   template:
     metadata:
       annotations:
-        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -52,7 +52,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -72,7 +72,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -87,7 +87,7 @@ spec:
   template:
     metadata:
       annotations:
-        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -105,7 +105,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -120,7 +120,7 @@ spec:
   template:
     metadata:
       annotations:
-        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -140,7 +140,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -160,7 +160,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -175,7 +175,7 @@ spec:
   template:
     metadata:
       annotations:
-        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:
@@ -195,7 +195,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -215,7 +215,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    kompose.cmd: /terraTrain/kompose convert -f dockercoin
+    kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
     kompose.version: 1.22.0 (955b78124)
   creationTimestamp: null
   labels:
@@ -230,7 +230,7 @@ spec:
   template:
     metadata:
       annotations:
-        kompose.cmd: /terraTrain/kompose convert -f dockercoin
+        kompose.cmd: /terraTrain/kompose convert -f /terraTrain/services/dockercoin.k8s
         kompose.version: 1.22.0 (955b78124)
       creationTimestamp: null
       labels:

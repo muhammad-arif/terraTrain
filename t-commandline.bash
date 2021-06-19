@@ -739,7 +739,7 @@ connect m1 \"ldapsearch -x -b \"ou=Staff,dc=test,dc=com\" -h $LDAPSERVER -p 389\
 t-gen-swarm_service() {
 	if [[ -d /terraTrain/client-bundle ]] 
 			then 
-				docker stack deploy -c /terraTrain/dockercoin.yml dockercoin       
+				docker stack deploy -c /terraTrain/services/dockercoin.swarm dockercoin       
 		else 
 			echo "Please run \"t gen client-bundle\" to generate client bundle first" 
 		fi
@@ -747,7 +747,7 @@ t-gen-swarm_service() {
 t-gen-k8s_service() {
 	if [[ -d /terraTrain/client-bundle ]] 
 			then 
-				kubectl apply -f /terraTrain/dockercoin.yaml
+				kubectl apply -f /terraTrain/services/dockercoin.k8s
 		else 
 			echo "Please run \"t gen client-bundle\" to generate client bundle first" 
 		fi
