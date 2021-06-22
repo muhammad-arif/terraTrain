@@ -146,13 +146,13 @@ SYNOPSIS
 
 DESCRIPTIONS
 Verbs:
-1) deploy : to deploy resources (cloud instances | MKE cluster)
+1) deploy : to deploy resoruces. (cloud instances | MKE cluster)
 	t deploy lab			-> To deploy the Lab (cloud instances + MKE cluster)
 	t deploy cluster		-> To deploy the MKE cluster (an existing cloud instances should be present)
 	t deploy instances		-> To deploy the Cloud instances
 2) destroy: to destroy resources (cloud instances | MKE cluster)
 	t destroy lab			-> To destroy the Lab (cloud instances + MKE cluster)
-	t destroy cluster		-> To destroy the MKE cluster (the cloud instances would not be destroyed)
+	t destroy cluster		-> To destroy the MKE cluster (the cloud instances would not be destoryed)
 3) show : to show the metadata of resources
 	t show all			-> To show all information about the cluster
 	t show versions 		-> To show the versions of the resources
@@ -165,26 +165,39 @@ Verbs:
 4) status: to check the cloud instance status 
 	t status managers		-> To check the status of manager nodes instances
 	t status msrs			-> To check the status of MSR nodes instances
-	t status workers		-> To check the status of worker nodes instances
+	t status workeres		-> To check the status of worker nodes instances
 	t status windows		-> To check the status of Windows worker nodes instances
 5) stop: to stop the cloud instances
-	t stop managers		-> To stop the manager nodes instances
+	t stop managers			-> To stop the manager nodes instances
 	t stop msrs			-> To stop MSR nodes instances
-	t stop workers		-> To stop worker nodes instances
+	t stop workeres			-> To stop worker nodes instances
 	t stop windows			-> To stop Windows worker nodes instances
-6) gen : to generate different tailored requirements
+6) start: to stop the cloud instances
+	t start managers			-> To start the manager nodes instances
+	t start msrs			-> To start MSR nodes instances
+	t start workeres			-> To start worker nodes instances
+	t start windows			-> To start Windows worker nodes instances
+7) gen : to generate different tailored requirements
 	t gen client-bundle		-> To generate client bundle
 	t gen swarm-service		-> To generate dockercoin app as swarm service 
 	t gen k8s-service		-> To generate dockercoin app as k8s service
-	t gen msr-login		-> To perform docker login to existing MSR
-	t gen msr-image		-> To populate MSR with random images
+	t gen msr-login			-> To perform docker login to existing MSR
+	t gen msr-image			-> To populate MSR with random images
 	t gen msr-org			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
-7) exec : to execute specific task on the cluster
+	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
+	t gen ldap-server		-> To install and configure ldap server
+	t gen lab-config		-> To generate lab configuration to xfer the labs metadata
+8) exec : to execute specific task on the cluster
 	t exec rethinkcli msr		-> To get into the rethinkdb of primary MSR replica
 	t exec rethinkcli mke		-> To get into the rethinkdb of MKE leader node
 	t exec etcdctl			-> To get into the etcd db of the MKE leader node
-
+	t exec lab-config		-> To import lab configuration
+9) upload : to upload configurations
+	t upload toml m1		-> To upload the toml file to manager node 1
+10) download : to download configurations
+	t download toml m1		-> To download the toml file to manager node 1
+	t download client-bundle		-> To download the client bundle
 Actors:
 1) managers: all the manager node of the MKE cluster.
 		Nicknames: m, mgr, manager, man, woman
