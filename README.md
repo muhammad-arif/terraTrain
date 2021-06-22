@@ -197,7 +197,6 @@ Verbs:
 	t upload toml m1		-> To upload the toml file to manager node 1
 10) download : to download configurations
 	t download toml m1		-> To download the toml file to manager node 1
-	t download client-bundle		-> To download the client bundle
 Actors:
 1) managers: all the manager node of the MKE cluster.
 		Nicknames: m, mgr, manager, man, woman
