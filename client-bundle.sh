@@ -23,9 +23,45 @@ eval "$(<env.sh)"
 export uname=$uname
 export pass=$pass
 export auth=$AUTHTOKEN
+export A=$AUTHTOKEN
+export U=$uname
+export P=$pass
+
+
 export ucpurl=$UCP_URL
 cd $pdir
 
+# Exporting node ip with appropriate variable. Eg. m1=1st manager ip, w2= 2nd worker ip ....
+manager_count=$(awk -F= -v key="manager_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+for count in $(seq $manager_count)
+    do 
+    index=`expr $count - 1` #because index_key starts with 0
+    mgr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+    export m$count=$mgr_address
+    export um$count="https://$mgr_address"
+done	
+worker_count=$(awk -F= -v key="worker_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+for count in $(seq $worker_count)
+    do 
+    index=`expr $count - 1` #because index_key starts with 0
+    wkr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+    export w$count=$wkr_address
+done
+msr_count=$(awk -F= -v key="msr_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+for count in $(seq $msr_count)
+    do 
+    index=`expr $count - 1` #because index_key starts with 0
+    msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+    export d$count=$msr_address
+    export ud$count=$msr_address
+done
+win_worker_count=$(awk -F= -v key="win_worker_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+for count in $(seq $win_worker_count)
+    do 
+    index=`expr $count - 1` #because index_key starts with 0
+    win_worker_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+    export win$count=$win_worker_address
+done
 
 printf "\n~~~~~~ Testing client bundle with kubectl~~~~~~ \n"
 kubectl get nodes || ( printf "Not working. May be credential issue" && exit 1 )
@@ -33,4 +69,7 @@ kubectl get nodes || ( printf "Not working. May be credential issue" && exit 1 )
 printf "\n~~~~~~ Testing client bundle with docker-cli~~~~~~ \n"
 docker node ls && printf "\n~~~~~~ Yeeeeup, working !! ~~~~~~ \n" || ( printf "Not working. May be credential issue" && exit 1 )
 
+printf "\nA few Environment Variables has been created for this cluster\n"
+printf "\nFor example,\n\tm1 = public dns of the manager-1\n\tum1 = https://dns-of-the-manger-1\n\tU = username\n\tP = password\n"
+printf "\nA few usages,\n\techo \$m1 \n\tcurl -k $um1/_ping\n\tcurl -k -u $U:$P $um1/info"
 bash
