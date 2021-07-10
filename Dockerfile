@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     ldap-utils \
     notary \
+    httpie \
     tmux
 
 ADD . /terraTrain

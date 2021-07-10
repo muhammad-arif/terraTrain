@@ -109,7 +109,7 @@ connect() {
 	if [[ $mtype == 'linux' ]]
 		then
 		printf "\n Logging into $instanceName...\n....\n"
-		ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+		ssh -q -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
 	else
 		if [[ $2 -eq 0 ]]
 		then
@@ -180,7 +180,7 @@ connect-stripped() {
 
 	if [[ $mtype == 'linux' ]]
 		then
-		ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+		ssh -q -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
 	else
 		if [[ $2 -eq 0 ]]
 		then
@@ -678,9 +678,9 @@ t-gen-msr_login() {
 }
 t-gen-ldap_server() {
 	printf "\n${REVERSE}[Step-1] ${YELLOW} Installing LDAP server on the Leader ${NORMAL}\n"
-	connect-stripped m1 "docker container run -d -p 9090:80 -p 389:389 --name ldap training/ldap:latest; sudo apt install ldap-utils -y;sudo yum install -y openldap openldap-clients "
-	printf "\nWaiting for 5 sec to service to be stable"
-	sleep 5
+	connect-stripped m1 "docker service create --name ldap --mode global --constraint node.role==manager -d -p 9090:80 -p 389:389  training/ldap:latest; sudo apt install ldap-utils -y;sudo yum install -y openldap openldap-clients "
+	printf "\nWaiting for 10 sec to service to be stable"
+	sleep 15
 	printf "\n${REVERSE}[Step-2] ${YELLOW} Checking if LDAP server is working or not ${NORMAL}\n"
 	LDAPSERVER=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
 	UNAME=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
@@ -739,7 +739,8 @@ connect m1 \"ldapsearch -x -b \"ou=Staff,dc=test,dc=com\" -h $LDAPSERVER -p 389\
 t-gen-swarm_service() {
 	if [[ -d /terraTrain/client-bundle ]] 
 			then 
-				docker stack deploy -c /terraTrain/services/dockercoin.swarm dockercoin       
+				rand=$(openssl rand -hex 5)
+				docker stack deploy -c /terraTrain/services/dockercoin.swarm dockercoin-$rand
 		else 
 			echo "Please run \"t gen client-bundle\" to generate client bundle first" 
 		fi
@@ -752,9 +753,16 @@ t-gen-k8s_service() {
 			echo "Please run \"t gen client-bundle\" to generate client bundle first" 
 		fi
 }
+t-gen-interlock_service() {
+	rand=$(openssl rand -hex 5)
+	docker network create -d overlay whoami-interlock-network-$rand
+	docker service create --name whoami-interlock-$rand --network whoami-interlock-network-$rand --label com.docker.lb.hosts=whoami-$rand --label com.docker.lb.network=whoami-interlock-network-$rand --label com.docker.lb.port=8000 --replicas 5 training/whoami:latest
+	printf "\n\nTry to acess the service with any of the following commands:\n\tcurl -H 'Host: whoami-$rand' \$m1:8080\n\thttp  \$m1:8080 'Host: whoami-$rand'"
+	printf "\n\nTo delete this service try\n\tdocker service rm whoami-interlock\n"
+}
 t-gen-msr_images() {
 	# Logging to MSR
-	printf "\n YOU NEED TO ADD LICENSE TO MSR BEFORE RUNNING THIS COMMAND\n"
+	printf "\nREMINDER: YOU NEED TO ADD LICENSE TO MSR AND GENERATE CLIENT-BUNDLE BEFORE RUNNING THIS COMMAND\nOTHERWISE IT WILL FAIL\n"
 	sleep 1
 	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
 	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
@@ -895,14 +903,23 @@ t-gen-msr_orgs() {
 }
 #### t download toml|lab TODO
 t-download-toml() {
-  echo "t download toml was typed "
+  	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+	curl -sk -X GET "https://UCP_URL/api/ucp/config-toml" -H  "accept: application/toml" -H  "Authorization: Bearer $AUTHTOKEN" > ucp-config.toml
+
 }
 t-download-lab() {
   echo "t download lab was typed "
 }
 #### t upload toml|lab TODO
 t-upload-toml() {
-  echo "t upload toml was typed "
+ 	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+	curl -sk -X PUT -H  "accept: application/toml" -H "Authorization: Bearer $AUTHTOKEN" --upload-file 'ucp-config.toml' https://UCP_URL/api/ucp/config-toml
 }
 t-upload-lab() {
   echo "t upload lab was typed "
@@ -1172,13 +1189,89 @@ t-show-all() {
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | { Name: .attributes.tags.Name, PublicDNS: .attributes.public_dns, }' 2>/dev/null
 }
+
+#### t exec rethinkcli mke|msr
+t-exec-cmd(){
+	case "$1" in
+
+	managers|m) t-exec-cmd-managers "$2"
+		exit;;
+	workers|w) t-exec-cmd-workers "$2"
+		exit;;
+	dtrs|msrs|d) t-exec-cmd-msrs "$2"
+		exit;;
+	windows|win) t-exec-cmd-windows "$2"
+		exit;;
+	all|a) t-exec-cmd-all "$2"
+		exit;;
+	*) printf "\nUsage: \n\tt exec cmd [role] \"[command to run]\"\nExample:\n\tt exec cmd managers \"docker ps\"\n\tt exec cmd managers \"yum update -y docker-ee\" "
+	exit;;
+esac
+}
+t-exec-cmd-managers() {
+	manager_count=$(awk -F= -v key="manager_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for i in $(seq 1 $manager_count)
+		do
+		connect m$i "$1"
+	done
+}
+t-exec-cmd-workers(){
+	worker_count=$(awk -F= -v key="worker_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for i in $(seq 1 $worker_count)
+		do
+		connect w$i "$1"
+	done
+}
+t-exec-cmd-msrs() {
+	msr_count=$(awk -F= -v key="msr_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for i in $(seq 1 $msr_count)
+		do
+		connect d$i "$1"
+	done
+}
+t-exec-cmd-windows() {
+	win_worker_count=$(awk -F= -v key="win_worker_count" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for i in $(seq 1 $win_worker_count)
+		do
+		connect win$i "$1"
+	done
+}
+ t-exec-cmd-all() {
+	 t-exec-cmd-managers "$1"
+	 t-exec-cmd-workers "$1"
+	 t-exec-cmd-msrs "$1"
+	 t-exec-cmd-windows "$1"
+ }
 ### t exec etcdctl
 t-exec-etcdctl() {
+	case "$1" in
+		mke|m1|mgr1|manager1) t-exec-etcdctl-mke-1 
+			exit;;
+		m2|mgr2|manager2) t-exec-etcdctl-mke-2
+			exit;;
+		m3|mgr3|manager3) t-exec-etcdctl-mke-3
+		exit;;
+	*) printf "\nUsages:\n\t echo \"member list\" | t exec etcdctl m1\n\t t exec et m2\n\t cluster-health"
+esac	
+}
+
+t-exec-etcdctl-mke-1() {
 	read echoedInput
 	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
 	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
 }
-#### t exec rethinkcli mke|msr
+t-exec-etcdctl-mke-2() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==1) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+
+}
+t-exec-etcdctl-mke-3() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==2) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+
+}
 t-exec-rethinkcli() {
 case "$1" in
 
@@ -1231,6 +1324,48 @@ t-exec-rethinkcli-msr-3() {
 	msr=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==2) | .attributes.public_dns' 2>/dev/null)
 	connect-stripped $msr "echo \"$echoedInput\" | sudo docker run --rm -i --net dtr-ol -e DTR_REPLICA_ID=000000000003 -v dtr-ca-000000000003:/ca dockerhubenterprise/rethinkcli:v2.2.0-ni non-interactive " | jq .
 }
+t-enable-interlock(){
+	A=$(curl -sk -d "{\"username\": \"$U\" , \"password\": \"$P\" }" $um1/auth/login | jq -r .auth_token)
+	printf "\n${REVERSE}[Step-1]${YELLOW} Enabling Interlock...${NORMAL}\n"
+	printf "\nMake sure you have Client bundle enabled. If not please run the following command.\nt gen cb\n"
+	sleep 5
+	printf "\nTrying to enable interlock on port 8080 and 8443"
+	echo '{"HTTPPort":8080,"HTTPSPort":8443,"Arch":"x86_64"}' | http --verify=no POST $um1/api/interlock "Authorization: Bearer $A"
+	printf "\nTrying to list ucp-interlock services..\n"
+	connect m1 "docker service ls --filter name=ucp-interlock"
+}
+t-enable-interlock-hitless(){
+	t-enable-interlock
+	printf "\n${REVERSE}[Step-2]${YELLOW} Enabling Hitless...${NORMAL}\n"
+	CURRENT_CONFIG_NAME=$(docker service inspect --format '{{ (index .Spec.TaskTemplate.ContainerSpec.Configs 0).ConfigName }}' ucp-interlock)
+	docker config inspect --format '{{ printf "%s" .Spec.Data }}' $CURRENT_CONFIG_NAME > config.toml
+	sed -i 's/\[Extensions.default\]/\[Extensions.default\]\n    HitlessServiceUpdate = true/' config.toml
+	NEW_CONFIG_NAME="com.docker.ucp.interlock.conf-$(( $(cut -d '-' -f 2 <<< "$CURRENT_CONFIG_NAME") + 1 ))"
+	docker config create $NEW_CONFIG_NAME config.toml
+	docker service update --config-rm $CURRENT_CONFIG_NAME --config-add source=$NEW_CONFIG_NAME,target=/config.toml ucp-interlock
+	connect m1 "docker service ls --filter name=ucp-interlock"
+}
+t-disable-interlock(){
+	A=$(curl -sk -d "{\"username\": \"$U\" , \"password\": \"$P\" }" $um1/auth/login | jq -r .auth_token)
+	printf "\n${REVERSE}[Step-1]${YELLOW} Enabling Interlock...${NORMAL}\n"
+	printf "\nMake sure you have Client bundle enabled. If not please run the following command.\nt gen cb\n"
+	sleep 5
+	printf "\nTrying to enable interlock on port 8080 and 8443"
+	echo '{"HTTPPort":8080,"HTTPSPort":8443,"Arch":"x86_64"}' | http --verify=no POST $um1/api/interlock "Authorization: Bearer $A"
+	printf "\nTrying to list ucp-interlock services..\n"
+	connect m1 "docker service ls --filter name=ucp-interlock"
+}
+t-disable-interlock-hitless(){
+	printf "\n${REVERSE}[Step-1]${YELLOW} Disabling Hitless...${NORMAL}\n"
+	CURRENT_CONFIG_NAME=$(docker service inspect --format '{{ (index .Spec.TaskTemplate.ContainerSpec.Configs 0).ConfigName }}' ucp-interlock)
+	docker config inspect --format '{{ printf "%s" .Spec.Data }}' $CURRENT_CONFIG_NAME > config.toml
+	sed -i '/HitlessServiceUpdate = true/d' config.toml
+	NEW_CONFIG_NAME="com.docker.ucp.interlock.conf-$(( $(cut -d '-' -f 2 <<< "$CURRENT_CONFIG_NAME") + 1 ))"
+	docker config create $NEW_CONFIG_NAME config.toml
+	docker service update --config-rm $CURRENT_CONFIG_NAME --config-add source=$NEW_CONFIG_NAME,target=/config.toml ucp-interlock
+	connect m1 "docker service ls --filter name=ucp-interlock"
+}
+
 ##### 1st level usage function : 
 usage1() {
 #  echo "t deploy lab|cluster|instances "
@@ -1290,23 +1425,25 @@ Verbs:
 	t gen client-bundle		-> To generate client bundle
 	t gen swarm-service		-> To generate dockercoin app as swarm service 
 	t gen k8s-service		-> To generate dockercoin app as k8s service
+	t gen interlock-service		-> To generate a service exposed with interlock
 	t gen msr-login			-> To perform docker login to existing MSR
 	t gen msr-image			-> To populate MSR with random images
 	t gen msr-org			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
 	t gen ldap-server		-> To install and configure ldap server
-	t gen lab-config		-> To generate lab configuration to xfer the labs metadata
 8) exec : to execute specific task on the cluster
-	t exec rethinkcli msr		-> To get into the rethinkdb of primary MSR replica
-	t exec rethinkcli mke		-> To get into the rethinkdb of MKE leader node
-	t exec etcdctl			-> To get into the etcd db of the MKE leader node
-	t exec lab-config		-> To import lab configuration
+	t exec rethinkcli msr		-> To request query from the rethinkdb of primary MSR replica
+	t exec rethinkcli mke		-> To request query from the rethinkdb of MKE leader node
+	t exec etcdctl m1			-> To request query from the etcd db of the MKE leader node
 9) upload : to upload configurations
 	t upload toml m1		-> To upload the toml file to manager node 1
 10) download : to download configurations
 	t download toml m1		-> To download the toml file to manager node 1
-	t download client-bundle		-> To download the client bundle
+11) enable : to enable configurations
+	t enable interlock		-> To enable Layer 7 ingress for swarm
+	t enable interlock-hitless		-> To enable hitless for interlock
+
 	
 Actors:
 1) managers: all the manager node of the MKE cluster.
@@ -1356,6 +1493,8 @@ gen)  # t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images
 						exit;;
 		k8s-service|k8s) t-gen-k8s_service
 						exit;;
+		interlock-service|is|interlock-svc) t-gen-interlock_service
+						exit;;
 		msr-images|mi) t-gen-msr_images
 					exit;;
 		msr-orgs|mo) t-gen-msr_orgs
@@ -1369,14 +1508,14 @@ gen)  # t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images
 		*) echo "t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images|msr-orgs|ldap-server|launchpad-config"
 		esac
 		exit;;  
-exec) # t exec etcdctl
-		case "$2" in 
-		"etcdctl") t-exec-etcdctl  
-				exit ;; 
-		*) echo "t exec etcdctl|rethinkcli "
-			exit ;;
-		esac		   
-		exit;;
+#exec) # t exec etcdctl
+#		case "$2" in 
+#		"etcdctl") t-exec-etcdctl  
+#				exit ;; 
+#		*) echo "t exec etcdctl|rethinkcli "
+#			exit ;;
+#		esac		   
+#		exit;;
 download|dnl) # t download toml|lab
             case "$2" in  
 	    "toml") t-download-toml
@@ -1393,37 +1532,71 @@ upload|upl) # t upload toml|lab
 	           exit;;
 	    esac
 	  exit;;
+enable|en) # t upload toml|lab 
+            case "$2" in 
+	    interlock | il) t-enable-interlock # echo '{"HTTPPort":8080,"HTTPSPort":8443,"Arch":"x86_64"}' | h POST $um1/api/interlock "Authorization: Bearer $A"
+	           exit;;
+	    interlock-hitless | ih) t-enable-interlock-hitless
+	           exit;;
+	    image-scan| is | scan) t-enable-image-scan
+	           exit;;
+		esac
+	  exit;;	  
+disable|dis) # t upload toml|lab 
+            case "$2" in 
+	    interlock | il) t-disable-interlock # echo '{"HTTPPort":8080,"HTTPSPort":8443,"Arch":"x86_64"}' | h POST $um1/api/interlock "Authorization: Bearer $A"
+	           exit;;
+	    interlock-hitless | ih) t-disable-interlock-hitless
+	           exit;;
+	    image-scan| is | scan) t-enable-image-scan
+	           exit;;
+		esac
+	  exit;;	
 *) usage1
 	exit ;;
 esac 
 elif [ $# -eq 3 ]; then 
-case "$1" in 
-show|sh) # t show ip|dns|hostname|creds|status ...
-		case "$2" in 
-		"ip") t-show-ip "$3"
+	case "$1" in 
+	show|sh) # t show ip|dns|hostname|creds|status ...
+			case "$2" in 
+			"ip") t-show-ip "$3"
+					exit;;
+			"dns") t-show-dns "$3"
+					exit;;
+			"hostname") t-show-hostname "$3"
+					exit;;
+			creds|credentials|cred|login|c)  t-show-creds "$3"
+					exit;;
+	#		 "status") t-show-status "$3"
+	#		        exit;;
+			*) echo " t show ip|dns|hostname|creds|status ... "
 				exit;;
-		"dns") t-show-dns "$3"
-				exit;;
-		"hostname") t-show-hostname "$3"
-				exit;;
-		creds|credentials|cred|login|c)  t-show-creds "$3"
-				exit;;
-#		 "status") t-show-status "$3"
-#		        exit;;
-		*) echo " t show ip|dns|hostname|creds|status ... "
+			esac 
 			exit;;
-		esac 
+	"exec") case "$2" in 
+			rethinkcli|rthink|rt) t-exec-rethinkcli "$3"
+			exit;;
+			"etcdctl" | et) t-exec-etcdctl  "$3"
+			*) printf "\nUsage: rethinkcli\n\techo \"r.db('enzi').tableList()\" | t exec rethinkcli mke\n\techo \"r.db('dtr2').tableList()\" | t exec rt msr\n\nUsage: cmd\n\tt exec cmd [role] \"[command to run]\"\nExample:\n\tt exec cmd managers \"docker ps\"\n\tt exec cmd managers \"yum update -y docker-ee\"\n"
+			exit;;
+			esac 
+			exit;;
+	*) usage1
 		exit;;
-"exec") case "$2" in 
-		rethinkcli|rthink|rt) t-exec-rethinkcli "$3"
+	esac
+elif [ $# -eq 4 ]; then 
+	case "$1" in 
+	"exec") case "$2" in 
+			cmd) t-exec-cmd "$3" "$4"
+			exit;;
+
+			*) printf "\nUsage: cmd\n\tt exec cmd [role] \"[command to run]\"\nExample:\n\tt exec cmd managers \"docker ps\"\n\tt exec cmd managers \"yum update -y docker-ee\"\n"
+			exit;;
+			esac 
+			exit;;
+	*) usage1
 		exit;;
-		*) printf "\nUsage: \necho \"r.db('enzi').tableList()\" | t exec rethinkcli mke\necho \"r.db('dtr2').tableList()\"t exec rethinkcli msr\n"
-		exit;;
-		esac 
-		exit;;
-*) usage1
-	exit;;
-esac
+	esac
 else 
 usage1 
 fi

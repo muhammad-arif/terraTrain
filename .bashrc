@@ -86,7 +86,7 @@ fi
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
-
+alias h='http --verify=no'
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
@@ -647,7 +647,7 @@ E.g: connect m1 "docker ps | grep ucp-kv"
   if [[ $mtype == 'linux' ]]
     then
       printf "\n Logging into $instanceName...\n....\n"
-      ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+      ssh -q -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
   else
     if [[ $2 -eq 0 ]]
       then
@@ -720,7 +720,7 @@ connect-stripped() {
 
   if [[ $mtype == 'linux' ]]
     then
-      ssh -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
+      ssh -q -i /terraTrain/key-pair -o StrictHostKeyChecking=false -l $amiUserName $instanceDNS "$2"
   else
     if [[ $2 -eq 0 ]]
       then

@@ -45,6 +45,7 @@ What do you need before using this?
     - [Install the platform](#install-the-platform)
     - [Run your cluster](#run-your-cluster)
 - [terratrain Command Line Tool reference](#terratrain-command-line-tool-reference)
+- [connect Command Line Tool reference](#connect-command-line-tool-reference)
 - [A few concepts](#a-few-concepts)
   - [Terratrain Workflow](#terratrain-workflow)
   - [Cluster vs Lab](#cluster-vs-lab)
@@ -181,22 +182,41 @@ Verbs:
 	t gen client-bundle		-> To generate client bundle
 	t gen swarm-service		-> To generate dockercoin app as swarm service 
 	t gen k8s-service		-> To generate dockercoin app as k8s service
+<<<<<<< HEAD
+=======
+	t gen interlock-service		-> To generate a service exposed with interlock
+>>>>>>> staging
 	t gen msr-login			-> To perform docker login to existing MSR
 	t gen msr-image			-> To populate MSR with random images
 	t gen msr-org			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
 	t gen ldap-server		-> To install and configure ldap server
+<<<<<<< HEAD
 	t gen lab-config		-> To generate lab configuration to xfer the labs metadata
 8) exec : to execute specific task on the cluster
 	t exec rethinkcli msr		-> To get into the rethinkdb of primary MSR replica
 	t exec rethinkcli mke		-> To get into the rethinkdb of MKE leader node
 	t exec etcdctl			-> To get into the etcd db of the MKE leader node
 	t exec lab-config		-> To import lab configuration
+=======
+8) exec : to execute specific task on the cluster
+	t exec rethinkcli msr		-> To request query from the rethinkdb of primary MSR replica
+	t exec rethinkcli mke		-> To request query from the rethinkdb of MKE leader node
+	t exec etcdctl m1			-> To request query from the etcd db of the MKE leader node
+>>>>>>> staging
 9) upload : to upload configurations
 	t upload toml m1		-> To upload the toml file to manager node 1
 10) download : to download configurations
 	t download toml m1		-> To download the toml file to manager node 1
+<<<<<<< HEAD
+=======
+11) enable : to enable configurations
+	t enable interlock		-> To enable Layer 7 ingress for swarm
+	t enable interlock-hitless		-> To enable hitless for interlock
+
+	
+>>>>>>> staging
 Actors:
 1) managers: all the manager node of the MKE cluster.
 		Nicknames: m, mgr, manager, man, woman
