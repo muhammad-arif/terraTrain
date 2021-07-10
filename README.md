@@ -52,6 +52,24 @@ What do you need before using this?
     - [Cluster](#cluster)
     - [Lab](#lab)
     - [Use cases](#use-cases)
+- [Lab related tasks](#lab-related-tasks)
+    - [Create a lab](#create-a-lab)
+    - [Destroy a lab](#destroy-a-lab)
+    - [Login to the cloud instances](#login-to-the-cloud-instances)
+  - [MKE Cluster Related task](#mke-cluster-related-task)
+    - [Activating a client bundle](#activating-a-client-bundle)
+    - [Check MKE related informations](#check-mke-related-informations)
+    - [Enable various configurations](#enable-various-configurations)
+    - [Generate workload on MKE](#generate-workload-on-mke)
+    - [Querying from ETCD and Rethinkdb for MKE](#querying-from-etcd-and-rethinkdb-for-mke)
+  - [MSR Cluster Related task](#msr-cluster-related-task)
+    - [Generate workload on MSR](#generate-workload-on-msr)
+    - [Login to MSR with docker cli](#login-to-msr-with-docker-cli)
+    - [Querying from Rethinkdb for MSR](#querying-from-rethinkdb-for-msr)
+  - [EC2 Related task](#ec2-related-task)
+    - [Stop Instances](#stop-instances)
+    - [Check status of Instances](#check-status-of-instances)
+    - [Start Instances](#start-instances)
 - [config.tfvars Configurtion file reference](#configtfvars-configurtion-file-reference)
   - [AWS Instance related configurations](#aws-instance-related-configurations)
     - [region=""](#region)
@@ -284,6 +302,185 @@ Also, if you try to `destroy` the `lab` then the `terratrain` will delete the cl
    2. Run `t gen launchpad-config` to generate the launchpad configuration files 
    3. Edit the `launchpad.yaml` file according to your need.
    4. Run `/terraTrain/launchpad-linux-x64 apply --config /terraTrain/launchpad.yaml`
+
+# Lab related tasks
+### Create a lab
+1. Create the platform
+    ```
+    docker run -it cgroups/terratrain
+    ```
+3. Edit config file
+    ```
+    vi config.tfvars
+    ```
+4. Paste AWS credentials
+5. Deploy Lab
+    ```
+    t deploy lab
+    ```
+8. Check resources
+    ```
+    t show all
+    ```
+### Destroy a lab
+1. Destroy the lab (or cloud resources)
+    ```
+    t destroy lab
+    ```
+2. Destory only MKE (only the installation)
+    ```
+    t destory cluster
+    ```
+### Login to the cloud instances
+1. Login without dns/ip
+    ```
+    connect m1
+    connect w1 "docker ps"
+    connect win1
+    ```
+2. Loging with IP
+    ```
+    connect ec2....
+    ```
+3. RDP to Windows Instance
+    ```
+    t show creds windows
+    #then use your RPD client
+    ```
+## MKE Cluster Related task
+### Activating a client bundle
+```
+t gen client-bundle
+```
+Test with the following commands
+```
+docker node ls
+kubectl -n kube-system get pods
+```
+
+### Check MKE related informations
+```
+t show managers
+t creds managers
+```
+### Enable various configurations 
+1. Enable Interlock
+    ```
+    t enable interlock
+    ```
+2. Enable Interlock Hitless
+    ```
+    t enable interlock-hitless
+    ```
+3. Generate LDAP server and Enable LDAP
+    ```
+    t gen ldap-server
+    ```
+4. Download MKE configuration file (`ucp-config.toml`)
+    ```
+    t download toml mke
+    ```
+5. Upload MKE confiiguration file (`ucp-config.toml`)
+    ```
+    t upload toml m1
+    ```
+### Generate workload on MKE
+1. Generate swarm workload with dockercoin stack
+    ```
+    t gen swarm-service
+    ```
+2. Generate Kubernetes workload with dockercoin 
+    ```
+    t gen k8s-service
+    ```
+3. Generate Interlock service
+    ```
+    t gen interlock-service
+    ```
+### Querying from ETCD and Rethinkdb for MKE
+1. Querying from etcd 
+    ```
+    t exec etcdctl m1
+    member list
+    ```
+2. Querying form etcd (Recommended way)
+    ```
+    echo "cluster-health" | t exec et m1
+    ```
+3. Querying form rethinkdb 
+    ```
+    t exec rethinkcli mke
+    r.dbList()
+    ```
+4. Querying from rethinkdb (Recommended way)
+    ```
+    echo "r.db('rethinkdb').tableList()" | t exec rethinkcli m1
+    echo "r.db('rethinkdb').table('stats')" | t exec rt m1
+    ```
+
+## MSR Cluster Related task
+
+### Generate workload on MSR
+1. Generate random images and repositories
+    ```
+    t gen msr-image
+    ```
+2. Generate Orgs/namespace and push random images and repositories under those
+    ```
+    t gen msr-org
+    ```
+### Login to MSR with docker cli
+```
+t gen msr-login
+```
+### Querying from Rethinkdb for MSR
+1. Querying form rethinkdb 
+    ```
+    t exec rethinkcli msr
+    r.dbList()
+    ```
+2. Querying from rethinkdb (Recommended way)
+    ```
+    echo "r.db('dtr2').table(tags)" | t exec rethinkcli d1
+    echo "r.db('dtr2').table('scanning_images).indexStatus()" | t exec rt m1
+    ```
+## EC2 Related task
+### Stop Instances
+1. Stop specific group
+    ```
+    t stop workers
+    ```
+2. Stop specific instance
+    ```
+    t stop m2
+    ```
+3. Stop all instances
+    ```
+    t stop all
+    ```
+### Check status of Instances
+1. Status of specific group
+    ```
+    t status workers
+    ```
+2. Status of all instances
+    ```
+    t status all
+    ```
+### Start Instances
+
+1. Start specific group
+    ```
+    t start managers
+    ```
+2. Start specific instance
+    ```
+    t start w1
+    ```
+3. Start all instances
+    ```
+    t start all
+    ```
 # config.tfvars Configurtion file reference
 ## AWS Instance related configurations
 ### region=""
