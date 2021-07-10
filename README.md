@@ -378,11 +378,11 @@ t creds managers
     ```
 4. Download MKE configuration file (`ucp-config.toml`)
     ```
-    t download toml mke
+    t download toml
     ```
 5. Upload MKE confiiguration file (`ucp-config.toml`)
     ```
-    t upload toml m1
+    t upload toml
     ```
 ### Generate workload on MKE
 1. Generate swarm workload with dockercoin stack
