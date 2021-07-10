@@ -26,16 +26,40 @@ What do you need before using this?
     3. Internet Connection
     4. AWS account
 # TLDR;
-1. Pull the image with `docker pull cgroups/terratrain` 
-2. Run the container with `docker run -it cgroups/terratrain`
-3. Now copy your AWS env variable commands and paste your AWS credentials inside the container
-4. Now edit the `config.tfvars` file according to your need
-5.  Create your lab environment with `t deploy lab` command. The installation process will take a bit more time. To check the installation logs run `tail -f -n+1 /tmp/mke-installation.log`
-6.  Check your installed components with `t show all` command.
-7.  SSH to the desired node with `connect m1` or `connect w1` or `connect public-dns`
-8.  To generate client bundle use `t gen cb` command.
-9.  To remove all the components of the cluster use `t destroy lab` command.
-10. For commandline reference run the command `t` or `t --help`
+1. Create the platform
+    ```
+    docker run -it cgroups/terratrain
+    ```
+2. Edit config file
+    ```
+    vi config.tfvars
+    ```
+3. Paste AWS credentials (Power User access Environment variables) inside the container.
+4. Deploy Lab
+    ```
+    t deploy lab
+    ```
+5. Check resources
+    ```
+    t show all
+    ```
+6. Generate client bundle
+    ```
+    t gen client-bundle
+    ```
+7. Login to the cloud instances
+   ```
+   connect m1
+   connect public_dns_or_ip_of_nodes
+   ```
+8. Destroy the lab (when you are done)
+    ```
+    t destroy lab
+    ```
+9. For more feature and usuage run `t --help` or scroll down
+    ```
+    t destroy lab
+    ```
 
 # Table of Contents
 - [Welcome to terraTrain](#welcome-to-terratrain)
@@ -202,8 +226,8 @@ Verbs:
 	t gen k8s-service		-> To generate dockercoin app as k8s service
 	t gen interlock-service		-> To generate a service exposed with interlock
 	t gen msr-login			-> To perform docker login to existing MSR
-	t gen msr-image			-> To populate MSR with random images
-	t gen msr-org			-> To populate MSR with random organizations and teams
+	t gen msr-images		-> To populate MSR with random images
+	t gen msr-orgs			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
 	t gen ldap-server		-> To install and configure ldap server
@@ -423,11 +447,11 @@ t creds managers
 ### Generate workload on MSR
 1. Generate random images and repositories
     ```
-    t gen msr-image
+    t gen msr-images
     ```
 2. Generate Orgs/namespace and push random images and repositories under those
     ```
-    t gen msr-org
+    t gen msr-orgs
     ```
 ### Login to MSR with docker cli
 ```
