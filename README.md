@@ -57,9 +57,7 @@ What do you need before using this?
     t destroy lab
     ```
 9. For more feature and usuage run `t --help` or scroll down
-    ```
-    t destroy lab
-    ```
+
 
 # Table of Contents
 - [Welcome to terraTrain](#welcome-to-terratrain)
