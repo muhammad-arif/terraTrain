@@ -762,7 +762,7 @@ t-gen-interlock_service() {
 }
 t-gen-msr_images() {
 	# Logging to MSR
-	printf "\n YOU NEED TO ADD LICENSE TO MSR BEFORE RUNNING THIS COMMAND\n"
+	printf "\nREMINDER: YOU NEED TO ADD LICENSE TO MSR AND GENERATE CLIENT-BUNDLE BEFORE RUNNING THIS COMMAND\nOTHERWISE IT WILL FAIL\n"
 	sleep 1
 	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
 	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
@@ -903,14 +903,23 @@ t-gen-msr_orgs() {
 }
 #### t download toml|lab TODO
 t-download-toml() {
-  echo "t download toml was typed "
+  	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+	curl -sk -X GET "https://UCP_URL/api/ucp/config-toml" -H  "accept: application/toml" -H  "Authorization: Bearer $AUTHTOKEN" > ucp-config.toml
+
 }
 t-download-lab() {
   echo "t download lab was typed "
 }
 #### t upload toml|lab TODO
 t-upload-toml() {
-  echo "t upload toml was typed "
+ 	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+	curl -sk -X PUT -H  "accept: application/toml" -H "Authorization: Bearer $AUTHTOKEN" --upload-file 'ucp-config.toml' https://UCP_URL/api/ucp/config-toml
 }
 t-upload-lab() {
   echo "t upload lab was typed "
@@ -1180,12 +1189,7 @@ t-show-all() {
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | { Name: .attributes.tags.Name, PublicDNS: .attributes.public_dns, }' 2>/dev/null
 }
-### t exec etcdctl
-t-exec-etcdctl() {
-	read echoedInput
-	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
-	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
-}
+
 #### t exec rethinkcli mke|msr
 t-exec-cmd(){
 	case "$1" in
@@ -1238,6 +1242,36 @@ t-exec-cmd-windows() {
 	 t-exec-cmd-msrs "$1"
 	 t-exec-cmd-windows "$1"
  }
+### t exec etcdctl
+t-exec-etcdctl() {
+	case "$1" in
+		mke|m1|mgr1|manager1) t-exec-etcdctl-mke-1 
+			exit;;
+		m2|mgr2|manager2) t-exec-etcdctl-mke-2
+			exit;;
+		m3|mgr3|manager3) t-exec-etcdctl-mke-3
+		exit;;
+	*) printf "\nUsages:\n\t echo \"member list\" | t exec etcdctl m1\n\t t exec et m2\n\t cluster-health"
+esac	
+}
+
+t-exec-etcdctl-mke-1() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+}
+t-exec-etcdctl-mke-2() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==1) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+
+}
+t-exec-etcdctl-mke-3() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==2) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+
+}
 t-exec-rethinkcli() {
 case "$1" in
 
@@ -1391,23 +1425,25 @@ Verbs:
 	t gen client-bundle		-> To generate client bundle
 	t gen swarm-service		-> To generate dockercoin app as swarm service 
 	t gen k8s-service		-> To generate dockercoin app as k8s service
+	t gen interlock-service		-> To generate a service exposed with interlock
 	t gen msr-login			-> To perform docker login to existing MSR
 	t gen msr-image			-> To populate MSR with random images
 	t gen msr-org			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
 	t gen ldap-server		-> To install and configure ldap server
-	t gen lab-config		-> To generate lab configuration to xfer the labs metadata
 8) exec : to execute specific task on the cluster
-	t exec rethinkcli msr		-> To get into the rethinkdb of primary MSR replica
-	t exec rethinkcli mke		-> To get into the rethinkdb of MKE leader node
-	t exec etcdctl			-> To get into the etcd db of the MKE leader node
-	t exec lab-config		-> To import lab configuration
+	t exec rethinkcli msr		-> To request query from the rethinkdb of primary MSR replica
+	t exec rethinkcli mke		-> To request query from the rethinkdb of MKE leader node
+	t exec etcdctl m1			-> To request query from the etcd db of the MKE leader node
 9) upload : to upload configurations
 	t upload toml m1		-> To upload the toml file to manager node 1
 10) download : to download configurations
 	t download toml m1		-> To download the toml file to manager node 1
-	t download client-bundle		-> To download the client bundle
+11) enable : to enable configurations
+	t enable interlock		-> To enable Layer 7 ingress for swarm
+	t enable interlock-hitless		-> To enable hitless for interlock
+
 	
 Actors:
 1) managers: all the manager node of the MKE cluster.
@@ -1472,14 +1508,14 @@ gen)  # t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images
 		*) echo "t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images|msr-orgs|ldap-server|launchpad-config"
 		esac
 		exit;;  
-exec) # t exec etcdctl
-		case "$2" in 
-		"etcdctl") t-exec-etcdctl  
-				exit ;; 
-		*) echo "t exec etcdctl|rethinkcli "
-			exit ;;
-		esac		   
-		exit;;
+#exec) # t exec etcdctl
+#		case "$2" in 
+#		"etcdctl") t-exec-etcdctl  
+#				exit ;; 
+#		*) echo "t exec etcdctl|rethinkcli "
+#			exit ;;
+#		esac		   
+#		exit;;
 download|dnl) # t download toml|lab
             case "$2" in  
 	    "toml") t-download-toml
@@ -1540,7 +1576,7 @@ elif [ $# -eq 3 ]; then
 	"exec") case "$2" in 
 			rethinkcli|rthink|rt) t-exec-rethinkcli "$3"
 			exit;;
-
+			"etcdctl" | et) t-exec-etcdctl  "$3"
 			*) printf "\nUsage: rethinkcli\n\techo \"r.db('enzi').tableList()\" | t exec rethinkcli mke\n\techo \"r.db('dtr2').tableList()\" | t exec rt msr\n\nUsage: cmd\n\tt exec cmd [role] \"[command to run]\"\nExample:\n\tt exec cmd managers \"docker ps\"\n\tt exec cmd managers \"yum update -y docker-ee\"\n"
 			exit;;
 			esac 

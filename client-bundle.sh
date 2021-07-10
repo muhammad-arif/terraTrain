@@ -71,5 +71,5 @@ docker node ls && printf "\n~~~~~~ Yeeeeup, working !! ~~~~~~ \n" || ( printf "N
 
 printf "\nA few Environment Variables has been created for this cluster\n"
 printf "\nFor example,\n\tm1 = public dns of the manager-1\n\tum1 = https://dns-of-the-manger-1\n\tU = username\n\tP = password\n"
-printf "\nA few usages,\n\techo \$m1 \n\tcurl -k $um1/_ping\n\tcurl -k -u $U:$P $um1/info"
+printf "\nA few usages,\n\techo \$m1 \n\tcurl -k \$um1/_ping\n\tcurl -k -u \$U:\$P \$um1/info"
 bash
