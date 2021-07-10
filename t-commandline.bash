@@ -1287,7 +1287,7 @@ case "$1" in
 		exit;;
 	d3|dtr3|msr3) t-exec-rethinkcli-msr-3
 		exit;;
-	*) printf "\nUsage: \necho \"r.db('enzi').tableList()\" | t exec rethinkcli mke\necho \"r.db('dtr2').tableList()\" | t exec rethinkcli msr\n"
+	*) printf "\nUsage: rethinkcli\n\techo \"r.db('enzi').tableList()\" | t exec rethinkcli mke\n\techo \"r.db('dtr2').tableList()\" | t exec rt msr\n\nUsage: cmd\n\tt exec cmd [role] \"[command to run]\"\nExample:\n\tt exec cmd managers \"docker ps\"\n\tt exec cmd managers \"yum update -y docker-ee\"\n" 
 	exit;;
 esac
 }	
@@ -1573,14 +1573,15 @@ elif [ $# -eq 3 ]; then
 				exit;;
 			esac 
 			exit;;
-	"exec") case "$2" in 
+	exec)
+		 case "$2" in 
 			rethinkcli|rthink|rt) t-exec-rethinkcli "$3"
-			exit;;
-			"etcdctl" | et) t-exec-etcdctl  "$3"
-			*) printf "\nUsage: rethinkcli\n\techo \"r.db('enzi').tableList()\" | t exec rethinkcli mke\n\techo \"r.db('dtr2').tableList()\" | t exec rt msr\n\nUsage: cmd\n\tt exec cmd [role] \"[command to run]\"\nExample:\n\tt exec cmd managers \"docker ps\"\n\tt exec cmd managers \"yum update -y docker-ee\"\n"
-			exit;;
-			esac 
-			exit;;
+				exit;;
+			etcdctl | et) t-exec-etcdctl  "$3"
+				exit;;
+			*) printf "\nUsage: \n\techo \"member list\" | t exec etcdctl m1\n\techo \"r.dbList()\"| t exec rethinkcli\n"
+		esac
+		exit;;
 	*) usage1
 		exit;;
 	esac
