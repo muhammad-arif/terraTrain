@@ -1272,6 +1272,36 @@ t-exec-etcdctl-mke-3() {
 	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=2 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
 
 }
+### t exec etcdctl3
+t-exec-etcdctl3() {
+	case "$1" in
+		mke|m1|mgr1|manager1) t-exec-etcdctl3-mke-1 
+			exit;;
+		m2|mgr2|manager2) t-exec-etcdctl3-mke-2
+			exit;;
+		m3|mgr3|manager3) t-exec-etcdctl3-mke-3
+		exit;;
+	*) printf "\nUsages:\n\t echo \"member list\" | t exec etcdctl m1\n\t t exec et m2\n\t cluster-health"
+esac	
+}
+
+t-exec-etcdctl3-mke-1() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=3 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+}
+t-exec-etcdctl3-mke-2() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==1) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=3 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+
+}
+t-exec-etcdctl3-mke-3() {
+	read echoedInput
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==2) | .attributes.public_dns' 2>/dev/null)
+	connect-stripped $UCP_URL "docker exec -i -e ETCDCTL_API=3 ucp-kv etcdctl --endpoints https://127.0.0.1:2379 $echoedInput"
+
+}
 t-exec-rethinkcli() {
 case "$1" in
 
@@ -1436,6 +1466,7 @@ Verbs:
 	t exec rethinkcli msr		-> To request query from the rethinkdb of primary MSR replica
 	t exec rethinkcli mke		-> To request query from the rethinkdb of MKE leader node
 	t exec etcdctl m1			-> To request query from the etcd db of the MKE leader node
+	t exec etcdctl3 m1			-> To request query from the etcd db of the MKE leader node
 9) upload : to upload configurations
 	t upload toml m1		-> To upload the toml file to manager node 1
 10) download : to download configurations
@@ -1578,6 +1609,8 @@ elif [ $# -eq 3 ]; then
 			rethinkcli|rthink|rt) t-exec-rethinkcli "$3"
 				exit;;
 			etcdctl | et) t-exec-etcdctl  "$3"
+				exit;;
+			etcdctl3 | et) t-exec-etcdctl3  "$3"
 				exit;;
 			*) printf "\nUsage: \n\techo \"member list\" | t exec etcdctl m1\n\techo \"r.dbList()\"| t exec rethinkcli\n"
 		esac
