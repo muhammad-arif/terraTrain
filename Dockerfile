@@ -43,6 +43,7 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
     apt-get -y update && apt-get install -y terraform  docker-ce-cli &&\
     chmod +x t-commandline.bash && \
     cp t-commandline.bash /bin/t && \
+    cp auger /bin/auger &&\
     cp t-commandline.bash /bin/terraTrain 
     
  

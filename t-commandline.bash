@@ -835,7 +835,7 @@ t-gen-msr_orgs() {
 	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
 	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
 	auth=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
-	msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+	msr=$(cat /terraTrain/terraform.tfstate |  jq  -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
 	curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
 	update-ca-certificates
 	docker login $msr -u $uname -p $pass
@@ -907,7 +907,7 @@ t-download-toml() {
 	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
 	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
 	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
-	curl -sk -X GET "https://UCP_URL/api/ucp/config-toml" -H  "accept: application/toml" -H  "Authorization: Bearer $AUTHTOKEN" > ucp-config.toml
+	curl -sk -X GET "https://${UCP_URL}/api/ucp/config-toml" -H  "accept: application/toml" -H  "Authorization: Bearer $AUTHTOKEN" > ucp-config.toml
 
 }
 t-download-lab() {
@@ -919,7 +919,7 @@ t-upload-toml() {
 	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
 	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
 	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
-	curl -sk -X PUT -H  "accept: application/toml" -H "Authorization: Bearer $AUTHTOKEN" --upload-file 'ucp-config.toml' https://UCP_URL/api/ucp/config-toml
+	curl -sk -X PUT -H  "accept: application/toml" -H "Authorization: Bearer $AUTHTOKEN" --upload-file 'ucp-config.toml' https://${UCP_URL}/api/ucp/config-toml
 }
 t-upload-lab() {
   echo "t upload lab was typed "
@@ -1517,7 +1517,7 @@ gen)  # t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images
 #		esac		   
 #		exit;;
 download|dnl) # t download toml|lab
-            case "$2" in  
+        case "$2" in  
 	    "toml") t-download-toml
 	           exit;;
 	    "lab") t-download-lab
