@@ -224,11 +224,12 @@ t-deploy-lab() {
 	else
 	echo "wrong Operating System Name" && return 1
 	fi
-
+	export REGISTRY_PASSWORD="$(awk -F= -v key="registry_pass" '$1==key {print $2}' /terraTrain/config.tfvars)"
+	export REGISTRY_USERNAME="$(awk -F= -v key="registry_id" '$1==key {print $2}' /terraTrain/config.tfvars)"
 	printf "\n${REVERSE}[Step-2]${MAGENTA} Generating configuration for Launchpad...${NORMAL}\n"
 	/terraTrain/configGenerator.sh
-	/terraTrain/launchpad-linux-x64 register -name test --email test@mail.com --company "Mirantis Inc." -a yes
-	nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+	/terraTrain/launchpad register -name test --email test@mail.com --company "Mirantis Inc." -a yes
+	nohup /terraTrain/launchpad apply --config launchpad.yaml &> /tmp/mke-installation.log &
 
 	t-show-all
 	printf "\n${BLINK}${REVERSE}[Step-3]${MAGENTA} MKE installation is running...${NORMAL}\n"
@@ -239,13 +240,13 @@ t-deploy-lab() {
 t-deploy-cluster() { 
 	printf "\n${REVERSE}[Step-1]${YELLOW} Trying to clean up any previous resedue...${NORMAL}\n"
 	pkill launchpad
-	/terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml &>/dev/null
+	/terraTrain/launchpad reset --force --config launchpad.yaml &>/dev/null
 	
 	printf "\n${REVERSE}[Step-2]${YELLOW} Generating Launchpad Configuration...${NORMAL}\n"
 	/terraTrain/configGenerator.sh
 	
 	printf "\n${REVERSE}[Step-3]${YELLOW} Executing Launchpad...${NORMAL}\n"
-	nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+	nohup /terraTrain/launchpad apply --config launchpad.yaml &> /tmp/mke-installation.log &
 	
 	printf "\n${BLINK}${REVERSE}[Step-3]${MAGENTA} MKE installation is running...${NORMAL}\n"
 	printf "\nIf you want to check the installation process use following command for watching log buffer\n"
@@ -282,7 +283,7 @@ t-destroy-cluster() {
 	sleep 3
 	printf "\n${REVERSE}[Step-1]${YELLOW} Trying to uninstall the cluster...${NORMAL}\n"
 	pkill launchpad
-	/terraTrain/launchpad-linux-x64 reset --force --config /terraTrain/launchpad.yaml
+	/terraTrain/launchpad reset --force --config /terraTrain/launchpad.yaml
 	
 	printf "\n${REVERSE}[Step-2]${YELLOW} Rebooting Machines...${NORMAL}\n"
 	for i in $(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role!="nfs") | .attributes.public_dns')
