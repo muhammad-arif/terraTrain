@@ -1458,7 +1458,7 @@ Verbs:
 	t gen interlock-service		-> To generate a service exposed with interlock
 	t gen msr-login			-> To perform docker login to existing MSR
 	t gen msr-image			-> To populate MSR with random images
-	t gen msr-org			-> To populate MSR with random organizations and teams
+	t gen msr-orgs			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
 	t gen ldap-server		-> To install and configure ldap server
@@ -1528,7 +1528,7 @@ gen)  # t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images
 						exit;;
 		msr-images|mi) t-gen-msr_images
 					exit;;
-		msr-orgs|mo) t-gen-msr_orgs
+		msr-orgs|msr-org|mo) t-gen-msr_orgs
 					exit;;
 		ldap-server|ldap|ls) t-gen-ldap_server
 					exit;;
