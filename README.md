@@ -323,7 +323,7 @@ Also, if you try to `destroy` the `lab` then the `terratrain` will delete the cl
    1. Run `t deploy instances` just to create the cloud resrources 
    2. Run `t gen launchpad-config` to generate the launchpad configuration files 
    3. Edit the `launchpad.yaml` file according to your need.
-   4. Run `/terraTrain/launchpad-linux-x64 apply --config /terraTrain/launchpad.yaml`
+   4. Run `/terraTrain/launchpad apply --config /terraTrain/launchpad.yaml`
 
 # Lab related tasks
 ### Create a lab

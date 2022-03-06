@@ -147,7 +147,7 @@ EOL
     cat >> launchpad.yaml << EOL
   mke:
     version: $mke_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     adminUsername: $mkeadminUsername
     adminPassword: $mkeadminPassword
 EOL
@@ -158,7 +158,7 @@ EOL
       cat >> launchpad.yaml << EOL
   msr:
     version: $msr_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     installFlags:
     - --dtr-external-url $msr_address
     - --ucp-insecure-tls
@@ -169,7 +169,7 @@ EOL
       cat >> launchpad.yaml << EOL
   msr:
     version: $msr_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     installFlags:
     - --dtr-external-url $msr_address
     - --ucp-insecure-tls
@@ -271,7 +271,7 @@ EOL
     cat >> launchpad.yaml << EOL
   mke:
     version: $mke_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     adminUsername: $mkeadminUsername
     adminPassword: $mkeadminPassword
 EOL

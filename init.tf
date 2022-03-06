@@ -13,7 +13,7 @@ variable "aws_profile" {
 }
 variable "name" {
   type        = string
-  description = "This is the Parent instance type name. \nFor 3 instance it would be like the following,\nIf the name is helios \n1. helios-ucp-leader\n2. helios_instance-0\n3. helios_instance-1"
+  description = "Please Type your name so that You and Cloud admin can identify your resources."
 }
 variable "caseNo" {
   type        = string
@@ -27,22 +27,22 @@ variable "os_name" {
 variable "os_version" {
   type        = string
   description = "Please type os Version. For ubuntu 16.04,18,04 etc. For redhat 7.8, 7.1, 8.1 etc"
-  default = "18.04"
+  default = "20.04"
 }
 variable "worker_count" {
   type        = string
   description = "Please type the total number of worker"
-  default = 3
+  default = 0
 }
 variable "manager_count" {
   type        = string
   description = "Please type the total number of manager"
-  default = 3
+  default = 1
 }
 variable "msr_count" {
   type        = string
   description = "Please type the total number of dtr"
-  default = 3
+  default = 0
 }
 variable "win_worker_count" {
   type        = string
@@ -80,7 +80,7 @@ variable "image_repo" {
 variable "mcr_version" {
   type        = string
   description = "Please type your desired Mirantis Container Runtime version"
-  default = "19.03.14"
+  default = "20.10.7"
 }
 variable "mke_version" {
   type        = string

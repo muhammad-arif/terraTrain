@@ -141,6 +141,8 @@ source /terraTrain/config.tfvars
 complete -C /usr/bin/terraform terraform
 alias d="docker"
 alias k="kubectl"
+alias h="helm"
+alias ks="kubectl -n kube-system"
 alias k-n-kubesystem="kubectl -n kube-system"
 alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 
@@ -149,7 +151,7 @@ alias tt-genClientBundle="/bin/bash /terraTrain/client-bundle.sh"
 tt-cleanup() {
   printf "\n${REVERSE}[Step-1]${YELLOW} Trying to uninstall the cluster...${NORMAL}\n"
   pkill launchpad
-  /terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
+  /terraTrain/launchpad reset --force --config launchpad.yaml
   printf "\n${REVERSE}[Step-2]${YELLOW} Rebooting Machines...${NORMAL}\n"
   for i in $(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role!="nfs") | .attributes.public_dns')
     do 
@@ -182,9 +184,9 @@ echo " " > /terraTrain/launchpad.yaml
 
 tt-reinstall() {
   pkill launchpad
-  /terraTrain/launchpad-linux-x64 reset --force --config launchpad.yaml
+  /terraTrain/launchpad reset --force --config launchpad.yaml
   /terraTrain/configGenerator.sh
-  nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+  nohup /terraTrain/launchpad apply --config launchpad.yaml &> /tmp/mke-installation.log &
   printf "\nMKE installation process is running.\nPlease check the MKE installation log buffer with the following command\ntail -f -n+1 /tmp/mke-installation.log\n"
 }
 
@@ -220,8 +222,8 @@ tt-run() {
   printf "\n${REVERSE}[Step-2]${MAGENTA} Generating configuration for Launchpad...${NORMAL}\n"
 
   /terraTrain/configGenerator.sh
-  /terraTrain/launchpad-linux-x64 register -name test --email test@mail.com --company "Mirantis Inc." -a yes
-  nohup /terraTrain/launchpad-linux-x64 apply --config launchpad.yaml &> /tmp/mke-installation.log &
+  /terraTrain/launchpad register -name test --email test@mail.com --company "Mirantis Inc." -a yes
+  nohup /terraTrain/launchpad apply --config launchpad.yaml &> /tmp/mke-installation.log &
   #
   #if (( "$input" == 'y' || "$input" == 'Y' )) ; then
   #  tail -f -n+1 /tmp/mke-installation.log | { sed '/Cluster is now configured/q'; pkill -PIPE -xg0 tail; } | tee output
