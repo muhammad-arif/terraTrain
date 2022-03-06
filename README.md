@@ -32,7 +32,7 @@ What do you need before using this?
     ```
 2. Edit config file
     ```
-    vi config.tfvars
+    vi config
     ```
 3. Paste AWS credentials (Power User access Environment variables) inside the container.
 4. Deploy Lab
@@ -92,7 +92,7 @@ What do you need before using this?
     - [Stop Instances](#stop-instances)
     - [Check status of Instances](#check-status-of-instances)
     - [Start Instances](#start-instances)
-- [config.tfvars Configurtion file reference](#configtfvars-configurtion-file-reference)
+- [config Configurtion file reference](#config-configurtion-file-reference)
   - [AWS Instance related configurations](#aws-instance-related-configurations)
     - [region=""](#region)
     - [name=""](#name)
@@ -147,7 +147,7 @@ $ export AWS_SECRET_ACCESS_KEY="kH+ClCBTRofpzollgeFiEMYw2qkyCatENBgEYdYL"
 [root]-[6b012fcac34d]-[~]-[22:57-Sun Mar 21]
 $ export AWS_SESSION_TOKEN="IQoJb3JpZ2luX2VjEDAaCWV1LXdlc3QtMiJGM"
 ```
-Edit the `config.tfvars` according to your requirement. If you don't it will ask you to death or run it the default configurations. 
+Edit the `config` according to your requirement. If you don't it will ask you to death or run it the default configurations. 
 The file is pretty self explanatory. For any details see Table of Contents
 
 You are good to go run your terraTrain. To run use following command,
@@ -174,7 +174,7 @@ docker container exec -it name-of-container bash
 `/bin/terratrain` or `/bin/t` is a command line tool created with simple bash to manupulate the resources of the terratrain platform.
 This tool has been inspired from the `kubectl` tool so you might interpret it's use a bit easily. 
 This command line tool interact with the cloud, cluster, nodes, with various scripted method. 
-This tool gets all the information from the `/terraTrain/terraform.tfstate`, `config.tfvars` and `launchpad.yaml` file.
+This tool gets all the information from the `/terraTrain/terraform.tfstate`, `config` and `launchpad.yaml` file.
 
 Following is the reference,
 ```
@@ -227,7 +227,7 @@ Verbs:
 	t gen msr-images		-> To populate MSR with random images
 	t gen msr-orgs			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
-	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
+	t gen launchpad-config		-> To populate launchpad.yaml based on config
 	t gen ldap-server		-> To install and configure ldap server
 8) exec : to execute specific task on the cluster
 	t exec rethinkcli msr		-> To request query from the rethinkdb of primary MSR replica
@@ -278,24 +278,24 @@ We can divide the whole lab cration process in 3 steps.
 
 1. Cloud instance creation:
 In terraTrain, all the cloud resources gets created by terraform. 
-Terraform colletcs all the lab related information from the `config.tfvars` file. 
+Terraform colletcs all the lab related information from the `config` file. 
 So when you run `t deploy instance` or `t deploy lab` what happens is something like following,
 ```
-terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings 
+terraform apply -var-file=/terraTrain/config -auto-approve -compact-warnings 
 ```
-If you have the provided the AWS access information and filled up `config.tfvars` properly, terraform will create necessary cloud resources (e.g., keypair, security group, ec2 etc.) according to the `config.tfvars` declaration. 
+If you have the provided the AWS access information and filled up `config` properly, terraform will create necessary cloud resources (e.g., keypair, security group, ec2 etc.) according to the `config` declaration. 
 
 2. MKE cluster creation:
 The second step is to create the MKE,MCR and MSR cluster which is mostly handled by the launchpad. 
 So when you run `t deploy cluster` or `t deploy lab` what happens is the follwoing,
-  1. A config generator script run to generate launchpad configuration (eg. instance username, keypair, mke version etc.) according to the declaration on `config.tfvars`
+  1. A config generator script run to generate launchpad configuration (eg. instance username, keypair, mke version etc.) according to the declaration on `config`
   2. Then launchpad command will run which will try to install MKE according to the configuration
 
 3. Interaction with the lab:
 All the interaction with lab is mostly done by the command line tool `terratrain` short for `t`.
 `t` is a command line tool created with simple bash and inspired from the `kubectl` tool. 
 This command line tool interact with the cloud, cluster, nodes, with various scripted method. 
-This command line tool gets all the information from the `/terraTrain/terraform.tfstate`, `config.tfvars` and `launchpad.yaml` file.
+This command line tool gets all the information from the `/terraTrain/terraform.tfstate`, `config` and `launchpad.yaml` file.
 To know more about this command line tool please follow the previous chapter or table of contents.
 ## Cluster vs Lab
 ### Cluster
@@ -314,7 +314,7 @@ Also, if you try to `destroy` the `lab` then the `terratrain` will delete the cl
 ### Use cases
 1. When you want to re-use the cloud instances to install a different MKE version,
    1. Run `t destroy cluster` to remove the currently installed cluster
-   2. Modify the MKE/MSR/MCR version on the `config.tfvars` file.
+   2. Modify the MKE/MSR/MCR version on the `config` file.
    3. Run `t deploy cluster` to install the new MKE version on the existing cloud resources
 2. When you just need the cloud instances 
    1. Run `t deploy instances` just to create the cloud resrources 
@@ -333,7 +333,7 @@ Also, if you try to `destroy` the `lab` then the `terratrain` will delete the cl
     ```
 3. Edit config file
     ```
-    vi config.tfvars
+    vi config
     ```
 4. Paste AWS credentials
 5. Deploy Lab
@@ -503,7 +503,7 @@ t gen msr-login
     ```
     t start all
     ```
-# config.tfvars Configurtion file reference
+# config Configurtion file reference
 ## AWS Instance related configurations
 ### region=""
 choose your region. This is where you should write the region name.

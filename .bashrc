@@ -137,7 +137,7 @@ die () {
   return "$ret"
 }
 
-source /terraTrain/config.tfvars
+source /terraTrain/config
 complete -C /usr/bin/terraform terraform
 alias d="docker"
 alias k="kubectl"
@@ -170,15 +170,15 @@ tt-cleanup() {
   done
   # Clearing nfs node's NFS directory
   connect  ubuntu@$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="nfs") | .attributes.public_dns') "sudo systemctl stop nfs-server;sudo rm -rf /var/nfs/general/*;sudo systemctl start nfs-server" &>/dev/null
-  printf "\n${REVERSE}Done\n${YELLOW}Now change just the MKE,MCR,MSR version on config.tfvars and run tt-reinstall ${NORMAL}\n"
+  printf "\n${REVERSE}Done\n${YELLOW}Now change just the MKE,MCR,MSR version on config and run tt-reinstall ${NORMAL}\n"
 }
 
 
 tt-plan() {
-    terraform plan -var-file=/terraTrain/config.tfvars
+    terraform plan -var-file=/terraTrain/config
 }
 tt-purge(){
-terraform destroy -auto-approve -compact-warnings -var-file=/terraTrain/config.tfvars
+terraform destroy -auto-approve -compact-warnings -var-file=/terraTrain/config
 echo " " > /terraTrain/launchpad.yaml
 }
 
@@ -195,19 +195,19 @@ tt-run() {
   /usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
   printf "\n${REVERSE}[Step-1]${CYAN} Trying to spin up the instances on cloud...${NORMAL}\n"
 
-  terraform apply -var-file=/terraTrain/config.tfvars -auto-approve -compact-warnings || return 1 
+  terraform apply -var-file=/terraTrain/config -auto-approve -compact-warnings || return 1 
   #Exporting AMI name for global reachability
 
-  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
   then
     amiUserName="ubuntu"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
   then
     export amiUserName="ec2-user"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
   then
     export amiUserName="centos"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
   then
     export amiUserName="ec2-user" 
   else
@@ -436,7 +436,7 @@ tt-msr-populate-img() {
     docker push $msr/$uname/git --all-tags || return 1
 }
 tt-ec2-start() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | .attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -447,7 +447,7 @@ tt-ec2-start() {
   done
 }
 tt-ec2-start-mgr() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="manager") |.attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -458,7 +458,7 @@ tt-ec2-start-mgr() {
   done
 }
 tt-ec2-start-wkr() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="worker") |.attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -469,7 +469,7 @@ tt-ec2-start-wkr() {
   done
 }
 tt-ec2-start-msr() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="msr") |.attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -480,7 +480,7 @@ tt-ec2-start-msr() {
   done
 }
 tt-ec2-start-win() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="win-worker") | .attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -491,7 +491,7 @@ tt-ec2-start-win() {
   done
 }
 tt-ec2-stop() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | .attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -502,7 +502,7 @@ tt-ec2-stop() {
   done
 }
 tt-ec2-stop-wkr() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="worker") |.attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -513,7 +513,7 @@ tt-ec2-stop-wkr() {
   done
 }
 tt-ec2-stop-mgr() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="manager") |.attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -524,7 +524,7 @@ tt-ec2-stop-mgr() {
   done
 }
 tt-ec2-stop-msr() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="msr") |.attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -535,7 +535,7 @@ tt-ec2-stop-msr() {
   done
 }
 tt-ec2-stop-win() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | select(.attributes.tags.role=="win-worker") |.attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -546,7 +546,7 @@ tt-ec2-stop-win() {
   done
 }
 tt-ec2-status() {
-  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+  region=$(awk -F= -v key="region" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
   for i in $(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.type=="aws_instance") | .instances[] | .attributes.id ')
     do 
       printf "\nInstance Name: "
@@ -588,16 +588,16 @@ E.g: connect m1 "docker ps | grep ucp-kv"
       return 0;
   fi
 
-  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
   then
     amiUserName="ubuntu"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
   then
     amiUserName="ec2-user"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
   then
     amiUserName="centos"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
   then
     amiUserName="ec2-user"
   else
@@ -662,16 +662,16 @@ E.g: connect m1 "docker ps | grep ucp-kv"
 connect-stripped() {
 
 
-  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
+  if [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "ubuntu" ]] 
   then
     amiUserName="ubuntu"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "redhat" ]] 
   then
     amiUserName="ec2-user"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "centos" ]] 
   then
     amiUserName="centos"
-  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config.tfvars  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
+  elif [[ $(awk -F= -v key="os_name" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") == "suse" ]] 
   then
     amiUserName="ec2-user"
   else

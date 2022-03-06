@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Sourcing config.tfvars
-. /terraTrain/config.tfvars
+# Sourcing config
+. /terraTrain/config
 if [[ $os_name == "ubuntu" ]] 
 then
   amiUserName="ubuntu"
