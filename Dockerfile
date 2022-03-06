@@ -48,7 +48,7 @@ RUN cp /terraTrain/bin/kubectl /usr/local/bin/kubectl && \
 # Some housekeeping
 RUN ssh-keygen -t rsa -b 4096 -f /terraTrain/key-pair -P "" && \
     cp .bashrc /root/.bashrc && \
-    printf "\npublicKey=\"$(cat /terraTrain/key-pair.pub)\"" >> /terraTrain/config.tfvars
+    printf "\npublicKey=\"$(cat /terraTrain/key-pair.pub)\"" >> /terraTrain/config
 
 ENV HOME /terraTrain
 RUN /bin/terraform init -input=false

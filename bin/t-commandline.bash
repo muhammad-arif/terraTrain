@@ -1020,7 +1020,7 @@ t-download-toml() {
 
 }
 t-download-lab() {
-#### t upload toml|lab TODO
+	echo "t download-lab is called"
 }
 t-upload-toml() {
  	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
@@ -1355,12 +1355,12 @@ t-exec-cmd-windows() {
 		connect win$i "$1"
 	done
 }
- t-exec-cmd-all() {
-	 t-exec-cmd-managers "$1"
-	 t-exec-cmd-workers "$1"
-	 t-exec-cmd-msrs "$1"
-	 t-exec-cmd-windows "$1"
- }
+t-exec-cmd-all() {
+	t-exec-cmd-managers "$1"
+	t-exec-cmd-workers "$1"
+	t-exec-cmd-msrs "$1"
+	t-exec-cmd-windows "$1"
+}
 ### t exec etcdctl
 t-exec-etcdctl() {
 	case "$1" in

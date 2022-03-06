@@ -1,4 +1,4 @@
-# AWS Info
+# Cloud Info
 region="eu-central-1"              # AWS region : ap-southeast-1, us-east-1 etc
 caseNo="452315"                    # optional tag to identify resources
 os_name="ubuntu"                   # use "ubuntu" or  "redhat" or "centos"
