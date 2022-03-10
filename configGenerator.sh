@@ -18,7 +18,8 @@ else
   echo "wrong Operating System Name"
 fi
 
-if [[ $msr_count != 0 ]]
+#if [[ $msr_count != 0 && $msr_version_3 != 1 ]]
+if [ $msr_count -ne 0 ] && [ $msr_version_3 -ne 1 ]
   then
     ####### Generating Launchpad Metadata Configuration
     cat > launchpad.yaml << EOL

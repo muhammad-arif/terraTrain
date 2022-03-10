@@ -203,6 +203,12 @@ t-deploy() {
 	esac
 }
 t-deploy-lab() { 
+	# Checking if there is an existing name attribute in config files
+	grep '^name' /terraTrain/config >/dev/null
+	if [ $? -ne 0 ] ; then		
+		echo "Please Type your name so that You and Cloud admin can identify your resources."; read name
+		printf "\nname=\"$name\"\n" >> /terraTrain/config
+	fi
 	var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
 	/usr/games/sl -e sl -${var:$(( RANDOM % ${#var} )):1} 
 	printf "\n${REVERSE}[Step-1]${CYAN} Trying to spin up the instances on cloud...${NORMAL}\n"
@@ -258,6 +264,8 @@ t-deploy-cluster() {
 	printf "\n${BLINK}${MAGENTA}tail -f -n+1 /tmp/mke-installation.log\n${NORMAL}"
 }
 t-deploy-instances() { 
+	echo "Please Type your name so that You and Cloud admin can identify your resources."; read name
+	printf "name=\"$name\"" >> /terraTrain/config
 	printf "\n${REVERSE}[Step-1]${CYAN} Trying to spin up the instances on cloud...${NORMAL}\n"
 	
 	var="aaaaaaaaaaaaallllllllllllllllllllllllllF"
@@ -304,7 +312,8 @@ t-destroy-lab() {
 	sleep 5
 	printf "\n${REVERSE}[Step 1]${RED} Destroying Cloud Instances ${NORMAL}\n"
 	cd /terraTrain
-	terraform destroy -var name=" " -input=false -auto-approve -compact-warnings -var-file=/terraTrain/config
+	terraform destroy -input=false -auto-approve -compact-warnings -var-file=/terraTrain/config
+	# Resetting the launchpad configuration file
 	echo " " > launchpad.yaml
 }
 t-destroy-cluster() { 
@@ -1514,7 +1523,84 @@ t-disable-interlock-hitless(){
 	docker service update --config-rm $CURRENT_CONFIG_NAME --config-add source=$NEW_CONFIG_NAME,target=/config.toml ucp-interlock
 	connect m1 "docker service ls --filter name=ucp-interlock"
 }
-
+t-install-msrv3() {
+	printf "\nChecking if client bundle is install or not\n"
+	
+	if !docker node ls &>/dev/null; then
+		t-gen-client_bundle
+	fi
+	printf "\nInstalling NFS utilities in all of the hostst"
+	t-exec-cmd-all "sudo yum install -y nfs-utils; sudo apt install nfs-common -y"
+	printf "\n${REVERSE}[Step-1]${YELLOW} Installing NFS Provisionar driver and volume for storage class${NORMAL}\n"
+	/terraTrain/bin/helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+	/terraTrain/bin/helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+    --set nfs.server=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="nfsNode") | .instances[] | select(.index_key==0) | .attributes.public_dns') \
+    --set nfs.path=/var/nfs/general
+	
+	printf "\nWaiting for the Storage Class to be ready \n"
+	for i in $(seq 5)
+		do
+			if [[ $(kubectl get deploy nfs-subdir-external-provisioner -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
+				if [ $i -eq 5 ] ; then 
+					echo "Not ready! Your NFS provisioner is not working. Did you enable nfs_backend in your /terraTrain/config file"
+					exit				
+				fi
+				printf "\n{REVERSE}[Step-1]${RED} Your NFS Provisioner is not Ready. Waiting for 5 more seconds${NORMAL}\n"
+				sleep 5
+				continue
+			else
+				printf "\n${REVERSE}[Step-1]${YELLOW} Your NFS Provisoner is ready${NORMAL}\n"
+				break
+			fi
+	done
+	
+	printf "\n${REVERSE}[Step-1]${YELLOW}Setting the nfs-client storage class to be the default storage class${NORMAL}\n"
+	kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+	kubectl describe storageclass nfs-client 
+	
+	printf "\n${REVERSE}[Step-2]${YELLOW}Setting Privilege attributes for UserAcounts and ServiceAcounts for Postgresql controller${NORMAL}\n"
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+	#curl -sk -X PUT -H  "accept: application/toml" -H "Authorization: Bearer $AUTHTOKEN" --upload-file 'ucp-config.toml' https://${UCP_URL}/api/ucp/config-toml
+	curl -sk -H "Authorization: Bearer $AUTHTOKEN" -XGET https://${UCP_URL}/api/ucp/config/kubernetes > /tmp/old-config
+	jq '.privAttributesAllowedForUserAccounts=["privileged"]' /tmp/old-config | jq '.privAttributesUserAccounts=["default:postgress-operator"]' | jq '.privAttributesAllowedForServiceAccounts=["privileged"]' | jq '.privAttributesServiceAccounts=["default:postgress-pod"]' > /tmp/new-config
+	curl -k -H "Authorization: Bearer $AUTHTOKEN" -XPUT https://${UCP_URL}/api/ucp/config/kubernetes -d "$(cat /tmp/new-config)"
+	
+	printf "\n${REVERSE}[Step-3]${YELLOW}Installing Cert Manager${NORMAL}\n"
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.6.1/cert-manager.yaml
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.6.1/cert-manager.crds.yaml
+	sleep 20
+	
+	printf "\n${REVERSE}[Step-4]${YELLOW}Installing Postgresql Controller${NORMAL}"
+	/terraTrain/bin/helm repo add postgres-operator https://opensource.zalando.com/postgres-operator/charts/postgres-operator/
+	/terraTrain/bin/helm repo up
+	/terraTrain/bin/helm --debug install postgres-operator postgres-operator/postgres-operator --set configKubernetes.spilo_runasuser=101 --set configKubernetes.spilo_runasgroup=103 --set configKubernetes.spilo_fsgroup=103
+	printf "\n${REVERSE}[Step-4]${YELLOW}Checking if Postgresql Controller has been properly or not${NORMAL}"
+		for i in $(seq 5)
+		do
+			if [[ $(kubectl get deploy postgres-operator -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
+				if [ $i -eq 5 ] ; then 
+					echo "Not ready! The Postgres Operator is not working"
+					exit				
+				fi
+				printf "\n{REVERSE}[Step-1]${RED} Your Postgres Operator is not Ready. Waiting for 5 more seconds${NORMAL}\n"
+				sleep 5
+				continue
+			else
+				printf "\n${REVERSE}[Step-4]${YELLOW} Your Postgres Operator is ready${NORMAL}\n"
+				break
+			fi
+	done
+	sleep 5
+	printf "\n${REVERSE}[Final-Step]${YELLOW}Installing MSR${NORMAL}\n"
+	/terraTrain/bin/helm --debug install msr msr --repo https://registry.mirantis.com/charts/msr/msr --version $(awk -F= -v key="msr_version" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	
+	printf "\n${REVERSE}[Installation is Done]${YELLOW}Checking the services${NORMAL}\n"
+	kubectl get pod
+	kubectl get services
+}
 ##### 1st level usage function : 
 usage1() {
 #  echo "t deploy lab|cluster|instances "
@@ -1660,14 +1746,6 @@ gen)  # t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images
 		*) echo "t gen client-bundle|msr-login|swarm-service|k8s-service|msr-images|msr-orgs|ldap-server|launchpad-config"
 		esac
 		exit;;  
-#exec) # t exec etcdctl
-#		case "$2" in 
-#		"etcdctl") t-exec-etcdctl  
-#				exit ;; 
-#		*) echo "t exec etcdctl|rethinkcli "
-#			exit ;;
-#		esac		   
-#		exit;;
 download|dnl) # t download toml|lab
         case "$2" in  
 	    "toml") t-download-toml
@@ -1704,6 +1782,13 @@ disable|dis) # t upload toml|lab
 	           exit;;
 		esac
 	  exit;;	
+install|ins|inst) # t upload toml|lab 
+            case "$2" in 
+	    msrv3 |msr3 | msr) t-install-msrv3 
+	           exit;;
+		esac
+	  exit;;	
+
 *) usage1
 	exit ;;
 esac 

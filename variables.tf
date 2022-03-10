@@ -57,7 +57,7 @@ variable "msr_instance_type" {
 variable "worker_instance_type" {
   type        = string
   description = "Please type which Instance type you want. \n1. c4.xlarge : 4 vCPU - 4G MEM\n2. c4.2xlarge  : 8 vCPU - 15.7 G MEM\n3. m4.xlarge : 4 vCPU - 16 G MEM [ Best For Prod reproduce ]"
-  default = "t2.micro"
+  default = "c4.xlarge"
 }
 variable "manager_instance_type" {
   type        = string
