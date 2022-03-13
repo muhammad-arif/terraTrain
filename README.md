@@ -224,7 +224,7 @@ Verbs:
 	t gen k8s-service		-> To generate dockercoin app as k8s service
 	t gen interlock-service		-> To generate a service exposed with interlock
 	t gen msr-login			-> To perform docker login to existing MSR
-	t gen msr-images		-> To populate MSR with random images
+	t gen msr-images		-> To populate MSR with a few  random  images
 	t gen msr-orgs			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config.tfvars
