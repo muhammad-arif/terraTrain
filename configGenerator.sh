@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Sourcing config.tfvars
-. /terraTrain/config.tfvars
+# Sourcing config
+. /terraTrain/config
 if [[ $os_name == "ubuntu" ]] 
 then
   amiUserName="ubuntu"
@@ -18,7 +18,8 @@ else
   echo "wrong Operating System Name"
 fi
 
-if [[ $msr_count != 0 ]]
+#if [[ $msr_count != 0 && $msr_version_3 != 1 ]]
+if [ $msr_count -ne 0 ] && [ $msr_version_3 -ne 1 ]
   then
     ####### Generating Launchpad Metadata Configuration
     cat > launchpad.yaml << EOL
@@ -147,7 +148,7 @@ EOL
     cat >> launchpad.yaml << EOL
   mke:
     version: $mke_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     adminUsername: $mkeadminUsername
     adminPassword: $mkeadminPassword
 EOL
@@ -158,7 +159,7 @@ EOL
       cat >> launchpad.yaml << EOL
   msr:
     version: $msr_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     installFlags:
     - --dtr-external-url $msr_address
     - --ucp-insecure-tls
@@ -169,7 +170,7 @@ EOL
       cat >> launchpad.yaml << EOL
   msr:
     version: $msr_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     installFlags:
     - --dtr-external-url $msr_address
     - --ucp-insecure-tls
@@ -243,6 +244,20 @@ EOL
       keyPath: /terraTrain/key-pair
 EOL
             done
+            ### For MSRv3 nodes
+            for count in $(seq $msr_count)
+            do 
+                index=`expr $count - 1` #because index_key starts with 0
+                msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+                cat >> launchpad.yaml << EOL
+  - role: worker
+    ssh:
+      address: $msr_address
+      user: $amiUserName
+      port: 22
+      keyPath: /terraTrain/key-pair
+EOL
+            done 
     fi
         ####### Generating Windows Worker Node Configuration
     if [[ $win_worker_count != 0 ]]
@@ -271,7 +286,7 @@ EOL
     cat >> launchpad.yaml << EOL
   mke:
     version: $mke_version
-    imageRepo: "docker.io/mirantis"
+    imageRepo: "$image_repo"
     adminUsername: $mkeadminUsername
     adminPassword: $mkeadminPassword
 EOL
