@@ -785,6 +785,75 @@ t-gen-client_bundle() {
 	printf "\nA few usages,\n\techo \$m1 \n\tcurl -k \$um1/_ping\n\tcurl -k -u \$U:\$P \$um1/info"
 	bash
 }
+t-gen-client_bundleshort(){
+			#/bin/bash /terraTrain/client-bundle.sh
+		printf "\n~~~~~~ Removing Old Client Bundle if there is any~~~~~~ \n"
+	if [[ -f bundle.zip ]] 
+	    then rm -rf /terraTrain/bundle.zip
+	fi
+	if [[ -d client-bundle ]] 
+	    then rm -rf /terraTrain/client-bundle
+	fi
+	pdir=$(pwd)
+	printf "\n~~~~~~ Downloading the client bundle ~~~~~~~\n"
+	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+
+	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+	curl -k -H "Authorization: Bearer $AUTHTOKEN" https://${UCP_URL}/api/clientbundle -o bundle.zip
+	mkdir /terraTrain/client-bundle
+	unzip /terraTrain/bundle.zip -d /terraTrain/client-bundle
+	cd /terraTrain/client-bundle
+	printf "\n~~~~~~ Activating the client bundle ~~~~~~~\n"
+	eval "$(printenv | grep AWS)"
+	eval "$(<env.sh)"
+	export uname=$uname
+	export pass=$pass
+	export auth=$AUTHTOKEN
+	export A=$AUTHTOKEN
+	export U=$uname
+	export P=$pass
+
+
+	export ucpurl=$UCP_URL
+	cd $pdir
+
+	# Exporting node ip with appropriate variable. Eg. m1=1st manager ip, w2= 2nd worker ip ....
+	manager_count=$(awk -F= -v key="manager_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for count in $(seq $manager_count)
+	    do 
+	    index=`expr $count - 1` #because index_key starts with 0
+	    mgr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+	    export m$count=$mgr_address
+	    export um$count="https://$mgr_address"
+	done	
+	worker_count=$(awk -F= -v key="worker_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for count in $(seq $worker_count)
+	    do 
+	    index=`expr $count - 1` #because index_key starts with 0
+	    wkr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+	    export w$count=$wkr_address
+	done
+	msr_count=$(awk -F= -v key="msr_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for count in $(seq $msr_count)
+	    do 
+	    index=`expr $count - 1` #because index_key starts with 0
+	    msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+	    export d$count=$msr_address
+	    export ud$count=$msr_address
+	done
+	win_worker_count=$(awk -F= -v key="win_worker_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	for count in $(seq $win_worker_count)
+	    do 
+	    index=`expr $count - 1` #because index_key starts with 0
+	    win_worker_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+	    export win$count=$win_worker_address
+	done
+
+	printf "\n~~~~~~ Testing client bundle with kubectl~~~~~~ \n"
+	kubectl get nodes || ( printf "Not working. May be credential issue" && exit 1 )
+}
 t-gen-msr_login() {
 	msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
 	if [[ -d /terraTrain/client-bundle ]] 
@@ -1530,78 +1599,8 @@ t-disable-interlock-hitless(){
 	connect m1 "docker service ls --filter name=ucp-interlock"
 }
 t-install-msrv3() {
-	printf "\nChecking if client bundle is install or not\n"
-	docker node ls &>/dev/null
-	if [ $? -ne  0 ] 
-		then
-			#/bin/bash /terraTrain/client-bundle.sh
-			if [[ -f bundle.zip ]] 
-			    then rm -rf /terraTrain/bundle.zip
-			fi
-			if [[ -d client-bundle ]] 
-			    then rm -rf /terraTrain/client-bundle
-			fi
-			pdir=$(pwd)
-			printf "\n~~~~~~ Downloading the client bundle ~~~~~~~\n"
-			UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
-			uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
-			pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
-
-			AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
-			curl -k -H "Authorization: Bearer $AUTHTOKEN" https://${UCP_URL}/api/clientbundle -o bundle.zip
-			mkdir /terraTrain/client-bundle
-			unzip /terraTrain/bundle.zip -d /terraTrain/client-bundle
-			cd /terraTrain/client-bundle
-			eval "$(printenv | grep AWS)"
-			eval "$(<env.sh)"
-			export uname=$uname
-			export pass=$pass
-			export auth=$AUTHTOKEN
-			export A=$AUTHTOKEN
-			export U=$uname
-			export P=$pass
-
-
-			export ucpurl=$UCP_URL
-			cd $pdir
-
-			# Exporting node ip with appropriate variable. Eg. m1=1st manager ip, w2= 2nd worker ip ....
-			manager_count=$(awk -F= -v key="manager_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
-			for count in $(seq $manager_count)
-			    do 
-			    index=`expr $count - 1` #because index_key starts with 0
-			    mgr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
-			    export m$count=$mgr_address
-			    export um$count="https://$mgr_address"
-			done	
-			worker_count=$(awk -F= -v key="worker_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
-			for count in $(seq $worker_count)
-			    do 
-			    index=`expr $count - 1` #because index_key starts with 0
-			    wkr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="workerNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
-			    export w$count=$wkr_address
-			done
-			msr_count=$(awk -F= -v key="msr_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
-			for count in $(seq $msr_count)
-			    do 
-			    index=`expr $count - 1` #because index_key starts with 0
-			    msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
-			    export d$count=$msr_address
-			    export ud$count=$msr_address
-			done
-			win_worker_count=$(awk -F= -v key="win_worker_count" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
-			for count in $(seq $win_worker_count)
-			    do 
-			    index=`expr $count - 1` #because index_key starts with 0
-			    win_worker_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="winNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
-			    export win$count=$win_worker_address
-			done
-
-			printf "\n~~~~~~ Testing client bundle with kubectl~~~~~~ \n"
-			kubectl get nodes || ( printf "Not working. May be credential issue" && exit 1 )
-
-			
-	printf "\nInstalling NFS utilities in all of the hostst"
+	t-gen-client_bundleshort			
+	printf "\nInstalling NFS utilities in all of the hosts"
 	t-exec-cmd-all "sudo yum install -y nfs-utils; sudo apt install nfs-common -y"
 	printf "\n${REVERSE}[Step-1]${YELLOW} Installing NFS Provisionar driver and volume for storage class${NORMAL}\n"
 	/terraTrain/bin/helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
@@ -1651,19 +1650,19 @@ t-install-msrv3() {
 	/terraTrain/bin/helm --debug install postgres-operator postgres-operator/postgres-operator --set configKubernetes.spilo_runasuser=101 --set configKubernetes.spilo_runasgroup=103 --set configKubernetes.spilo_fsgroup=103
 	printf "\n${REVERSE}[Step-4]${YELLOW}Checking if Postgresql Controller has been properly or not${NORMAL}"
 		for i in $(seq 5)
-		do
-			if [[ $(kubectl get deploy postgres-operator -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
-				if [ $i -eq 5 ] ; then 
-					echo "Not ready! The Postgres Operator is not working"
-					exit 1				
+			do
+				if [[ $(kubectl get deploy postgres-operator -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
+					if [ $i -eq 5 ] ; then 
+						echo "Not ready! The Postgres Operator is not working"
+						exit 1				
+					fi
+					printf "\n${REVERSE}[Step-1]${RED} Your Postgres Operator is not Ready. Waiting for 5 more seconds${NORMAL}\n"
+					sleep 5
+					continue
+				else
+					printf "\n${REVERSE}[Step-4]${YELLOW} Your Postgres Operator is ready${NORMAL}\n"
+					break
 				fi
-				printf "\n${REVERSE}[Step-1]${RED} Your Postgres Operator is not Ready. Waiting for 5 more seconds${NORMAL}\n"
-				sleep 5
-				continue
-			else
-				printf "\n${REVERSE}[Step-4]${YELLOW} Your Postgres Operator is ready${NORMAL}\n"
-				break
-			fi
 	done
 	sleep 5
 	printf "\n${REVERSE}[Final-Step]${YELLOW}Installing MSR${NORMAL}\n"
@@ -1671,20 +1670,20 @@ t-install-msrv3() {
 	
 	printf "\n${REVERSE}[Installation is Done]${YELLOW}Checking the services${NORMAL}\n"
 		for i in $(seq 5)
-		do
-			if [[ $(kubectl get deploy msr-registry -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
-				if [ $i -eq 5 ] ; then 
-					echo "Not ready! The MSR Registry is not working"
-					exit 1				
+			do
+				if [[ $(kubectl get deploy msr-registry -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
+					if [ $i -eq 5 ] ; then 
+						echo "Not ready! The MSR Registry is not working"
+						exit 1				
+					fi
+					printf "\n${REVERSE}[Final-Step]${RED} The MSR Registry is not ready. Waiting for 5 more seconds${NORMAL}\n"
+					sleep 10
+					continue
+				else
+					printf "\n${REVERSE}[Final-Step]${YELLOW} The MSR Registry is ready${NORMAL}\n"
+					break
 				fi
-				printf "\n${REVERSE}[Final-Step]${RED} The MSR Registry is not ready. Waiting for 5 more seconds${NORMAL}\n"
-				sleep 10
-				continue
-			else
-				printf "\n${REVERSE}[Final-Step]${YELLOW} The MSR Registry is ready${NORMAL}\n"
-				break
-			fi
-		done
+			done
 		for i in $(seq 5)
 		do
 			if [[ $(kubectl get deploy msr-rethinkdb-proxy -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
@@ -1730,7 +1729,7 @@ t-install-msrv3() {
 				break
 			fi
 		done	
-        msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+        # msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
 
 
 }
@@ -1973,3 +1972,4 @@ elif [ $# -eq 4 ]; then
 else 
 usage1 
 fi
+
