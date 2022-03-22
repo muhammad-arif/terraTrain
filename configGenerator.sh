@@ -229,6 +229,22 @@ EOL
 
 
     ####### Generating Worker Node Configuration
+    ### For MSRv3 nodes
+    if [[ $msr_count != 0 ]] ; then
+    for count in $(seq $msr_count)
+      do 
+          index=`expr $count - 1` #because index_key starts with 0
+          msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
+          cat >> launchpad.yaml << EOL
+  - role: worker
+    ssh:
+      address: $msr_address
+      user: $amiUserName
+      port: 22
+      keyPath: /terraTrain/key-pair
+EOL
+    done 
+    fi
     if [[ $worker_count != 0 ]]
         then
             for count in $(seq $worker_count)
@@ -244,20 +260,6 @@ EOL
       keyPath: /terraTrain/key-pair
 EOL
             done
-            ### For MSRv3 nodes
-            for count in $(seq $msr_count)
-            do 
-                index=`expr $count - 1` #because index_key starts with 0
-                msr_address=$(cat /terraTrain/terraform.tfstate |  jq --argjson cnt "$index" -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==$cnt) | .attributes.public_dns')
-                cat >> launchpad.yaml << EOL
-  - role: worker
-    ssh:
-      address: $msr_address
-      user: $amiUserName
-      port: 22
-      keyPath: /terraTrain/key-pair
-EOL
-            done 
     fi
         ####### Generating Windows Worker Node Configuration
     if [[ $win_worker_count != 0 ]]

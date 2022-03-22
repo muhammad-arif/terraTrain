@@ -1636,7 +1636,7 @@ t-install-msrv3() {
 	AUTHTOKEN=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
 	#curl -sk -X PUT -H  "accept: application/toml" -H "Authorization: Bearer $AUTHTOKEN" --upload-file 'ucp-config.toml' https://${UCP_URL}/api/ucp/config-toml
 	curl -sk -H "Authorization: Bearer $AUTHTOKEN" -XGET https://${UCP_URL}/api/ucp/config/kubernetes > /tmp/old-config
-	jq '.privAttributesAllowedForUserAccounts=["privileged"]' /tmp/old-config | jq '.privAttributesUserAccounts=["default:postgress-operator"]' | jq '.privAttributesAllowedForServiceAccounts=["privileged"]' | jq '.privAttributesServiceAccounts=["default:postgress-pod"]' > /tmp/new-config
+	jq '.privAttributesAllowedForUserAccounts=["privileged"]' /tmp/old-config | jq '.privAttributesUserAccounts=["default:postgress-operator"]' | jq '.privAttributesAllowedForServiceAccounts=["privileged"]' | jq '.privAttributesServiceAccounts=["default:postgress-pod"]' | jq '.ingressController.enabled=true' > /tmp/new-config
 	curl -k -H "Authorization: Bearer $AUTHTOKEN" -XPUT https://${UCP_URL}/api/ucp/config/kubernetes -d "$(cat /tmp/new-config)"
 	
 	printf "\n${REVERSE}[Step-3]${YELLOW}Installing Cert Manager${NORMAL}\n"
@@ -1671,65 +1671,21 @@ t-install-msrv3() {
 	printf "\n${REVERSE}[Installation is Done]${YELLOW}Checking the services${NORMAL}\n"
 		for i in $(seq 5)
 			do
-				if [[ $(kubectl get deploy msr-registry -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
+				if [[ $(kubectl get pods --namespace default -l "app.kubernetes.io/name=msr,app.kubernetes.io/instance=msr,app.kubernetes.io/component=nginx" -o jsonpath="{.items[0].status.phase}") == "Running" ]]; then
 					if [ $i -eq 5 ] ; then 
-						echo "Not ready! The MSR Registry is not working"
+						echo "Not ready! The MSR WebUI/Nginx is not working"
 						exit 1				
 					fi
-					printf "\n${REVERSE}[Final-Step]${RED} The MSR Registry is not ready. Waiting for 5 more seconds${NORMAL}\n"
+					printf "\n${REVERSE}[Final-Step]${RED} The MSR WebUI/Nginx is not ready. Waiting for 5 more seconds${NORMAL}\n"
 					sleep 10
 					continue
 				else
-					printf "\n${REVERSE}[Final-Step]${YELLOW} The MSR Registry is ready${NORMAL}\n"
+					printf "\n${REVERSE}[Final-Step]${YELLOW} The MSR is Ready ${NORMAL}\n"
 					break
 				fi
 			done
-		for i in $(seq 5)
-		do
-			if [[ $(kubectl get deploy msr-rethinkdb-proxy -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
-				if [ $i -eq 5 ] ; then 
-					echo "Not ready! The MSR Rethinkdb is not working"
-					exit 1				
-				fi
-				printf "\n${REVERSE}[Final-Step]${RED} The MSR Rethinkdb is not ready. Waiting for 5 more seconds${NORMAL}\n"
-				sleep 10
-				continue
-			else
-				printf "\n${REVERSE}[Final-Step]${YELLOW} The MSR Rethinkdb is ready${NORMAL}\n"
-				break
-			fi
-		done
-		for i in $(seq 5)
-		do
-			if [[ $(kubectl get deploy msr-api -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
-				if [ $i -eq 5 ] ; then 
-					echo "Not ready! The MSR API is not working"
-					exit 1				
-				fi
-				printf "\n${REVERSE}[Final-Step]${RED} The MSR API is not ready. Waiting for 5 more seconds${NORMAL}\n"
-				sleep 10
-				continue
-			else
-				printf "\n${REVERSE}[Final-Step]${YELLOW} The MSR API is ready${NORMAL}\n"
-				break
-			fi
-		done
-		for i in $(seq 5)
-		do
-			if [[ $(kubectl get deploy msr-nginx -o json | jq -r '.status.conditions[] | select(.type == "Available") | .status') == "False" ]]; then
-				if [ $i -eq 5 ] ; then 
-					echo "Not ready! The MSR WebUI is not working"
-					exit 1				
-				fi
-				printf "\n${REVERSE}[Final-Step]${RED} The MSR WebUI is not ready. Waiting for 5 more seconds${NORMAL}\n"
-				sleep 5
-				continue
-			else
-				printf "\n${REVERSE}[Final-Step]${YELLOW} The MSR WebUI is ready${NORMAL}\n"
-				break
-			fi
-		done	
-        # msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+
+        msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
 
 
 }
