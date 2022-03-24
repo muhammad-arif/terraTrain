@@ -23,7 +23,7 @@ resource "random_string" "mke_password" {
 }
 # Creating a local variable for generating randomness
 locals {
-  tstmp = formatdate("hh-mm-ss",timestamp())
+  tstmp = formatdate("DD-MMM-YYYY:hh-mm",timestamp())
 }
 ######## SELECTING A DEFAULT SUBNET #########
 data "aws_subnet" "selected" {
@@ -40,7 +40,7 @@ data "aws_subnet" "selected" {
 ######## CREATING A SECURITY GROUP #########
 
 resource "aws_security_group" "allow-all-security-group" {
-  //name        = "heliosAllowAllSG" # This line can be deleted 
+  name        = "${var.name}-${random_pet.mke_username.id}-SecurityGroup"
   description = "Allow everything for an ephemeral cluster"
 
   ingress {
@@ -58,7 +58,8 @@ resource "aws_security_group" "allow-all-security-group" {
   }
 
   tags = {
-    Name = "${var.name}-AA-SG-${local.tstmp}"
+    Name = "${var.name}-SecurityGroup"
+    DateOfCreation = local.tstmp
     resourceType = "Security Group"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
@@ -66,8 +67,15 @@ resource "aws_security_group" "allow-all-security-group" {
 }
 ####### CREATING THE KEY PAIR  #######
 resource "aws_key_pair" "deployer" {
-  key_name   = "${var.name}-${random_pet.mke_username.id}-deployer-key"
+  key_name   = "${var.name}-${random_pet.mke_username.id}-keypair"
   public_key = var.publicKey
+   tags = {
+    Name = "${var.name}-KeyPair"
+    DateOfCreation = local.tstmp
+    resourceType = "keyPair"
+    resourceOwner = "${var.name}"
+    caseNumber = "${var.caseNo}"
+  }
 }
 
 ######## CREATING THE WORKER INSTANCE #######
@@ -85,6 +93,7 @@ resource "aws_instance" "workerNode" {
     Name = "${var.name}-${random_pet.mke_username.id}-workerNode-${format("%02d", count.index + 1)}"
     resourceType = "instance"
     resourceOwner = "${var.name}"
+    DateOfCreation = local.tstmp
     caseNumber = "${var.caseNo}"
     role = "worker"
   }
@@ -110,6 +119,7 @@ resource "aws_instance" "managerNode" {
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
+    DateOfCreation = local.tstmp
     role = "manager"
   }
 }
@@ -137,6 +147,7 @@ EOF
     resourceType = "instance"
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
+    DateOfCreation = local.tstmp
     counter = "${format("%2d", count.index + 1)}"
     role = "msr"
 
@@ -221,6 +232,7 @@ EOF
     caseNumber = "${var.caseNo}"
     counter = "${format("%2d", count.index + 1)}"
     role = "win-worker"
+    DateOfCreation = local.tstmp
   }
 }
 resource "aws_instance" "nfsNode" {
@@ -248,6 +260,7 @@ EOF
     resourceOwner = "${var.name}"
     caseNumber = "${var.caseNo}"
     role = "nfs"
+    DateOfCreation = local.tstmp
   }
 }
 ######### AMI SEARCH #########
