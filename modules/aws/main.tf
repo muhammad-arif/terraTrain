@@ -84,7 +84,7 @@ resource "aws_instance" "workerNode" {
   count = "${var.worker_count}"
   ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
   instance_type = var.worker_instance_type
-  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
+  key_name = "${var.name}-${random_pet.mke_username.id}-keypair"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
@@ -105,7 +105,7 @@ resource "aws_instance" "managerNode" {
   count = "${var.manager_count}"
   ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
   instance_type = var.manager_instance_type
-  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
+  key_name = "${var.name}-${random_pet.mke_username.id}-keypair"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
@@ -129,7 +129,7 @@ resource "aws_instance" "msrNode" {
   count = "${var.msr_count}"
   ami = "${ var.os_name == "ubuntu" ? data.aws_ami.ubuntu[0].image_id : (var.os_name == "redhat" ? data.aws_ami.redhat[0].image_id : (var.os_name == "centos" ? data.aws_ami.centos[0].image_id : data.aws_ami.suse[0].image_id ))}"
   instance_type = var.msr_instance_type
-  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
+  key_name = "${var.name}-${random_pet.mke_username.id}-keypair"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
@@ -239,7 +239,7 @@ resource "aws_instance" "nfsNode" {
   count = "${var.nfs_backend}"
   ami = data.aws_ami.nfsNodeImage[0].image_id 
   instance_type = "t2.nano"
-  key_name = "${var.name}-${random_pet.mke_username.id}-deployer-key"
+  key_name = "${var.name}-${random_pet.mke_username.id}-keypair"
   associate_public_ip_address = true
   subnet_id = "${data.aws_subnet.selected.id}"
   security_groups = ["${aws_security_group.allow-all-security-group.id}"]
