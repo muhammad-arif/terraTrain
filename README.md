@@ -25,6 +25,9 @@ What do you need before using this?
     2. Docker client 
     3. Internet Connection
     4. AWS account
+
+**You can now install MSRv3 with terratrain. 
+[Caution: None of the "t gen msr" or "t exec rethinkcli" commands are compitible with MSRv3]**
 # TLDR;
 1. Create the platform
     ```
@@ -224,7 +227,7 @@ Verbs:
 	t gen k8s-service		-> To generate dockercoin app as k8s service
 	t gen interlock-service		-> To generate a service exposed with interlock
 	t gen msr-login			-> To perform docker login to existing MSR
-	t gen msr-images		-> To populate MSR with random images
+	t gen msr-images			-> To populate MSR with random images
 	t gen msr-orgs			-> To populate MSR with random organizations and teams
 	t gen msr-populate		-> To populate MSR with random orgs,teams and images
 	t gen launchpad-config		-> To populate launchpad.yaml based on config
@@ -233,13 +236,25 @@ Verbs:
 	t exec rethinkcli msr		-> To request query from the rethinkdb of primary MSR replica
 	t exec rethinkcli mke		-> To request query from the rethinkdb of MKE leader node
 	t exec etcdctl m1			-> To request query from the etcd db of the MKE leader node
+	t exec etcdctl3 m1			-> To request query from the etcd db of the MKE leader node
 9) upload : to upload configurations
-	t upload toml m1		-> To upload the toml file to manager node 1
+	t upload toml		-> To upload the toml file
 10) download : to download configurations
-	t download toml m1		-> To download the toml file to manager node 1
+	t download toml		-> To download the toml file
 11) enable : to enable configurations
 	t enable interlock		-> To enable Layer 7 ingress for swarm
 	t enable interlock-hitless		-> To enable hitless for interlock
+
+	
+Actors:
+1) managers: all the manager node of the MKE cluster.
+		Nicknames: m, mgr, manager, man, woman
+2) msrs: all the MSR nodes of the MKE cluster
+		Nicknames: msrs, ms, msrs, dtr, dtrs, d
+3) workers: all the linux worker nodes of the MKE cluster.
+		Nicknames: w, wkr, wrk, work, worker, workers
+4) windows: all the windows worker nodes of the MKE cluster.
+		Nicknames: wi, win, windows, winworker, winworkers, thing-that-breaks
 
 	
 Actors:

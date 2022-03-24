@@ -1841,9 +1841,9 @@ Verbs:
 	t exec etcdctl m1			-> To request query from the etcd db of the MKE leader node
 	t exec etcdctl3 m1			-> To request query from the etcd db of the MKE leader node
 9) upload : to upload configurations
-	t upload toml m1		-> To upload the toml file to manager node 1
+	t upload toml		-> To upload the toml file
 10) download : to download configurations
-	t download toml m1		-> To download the toml file to manager node 1
+	t download toml		-> To download the toml file
 11) enable : to enable configurations
 	t enable interlock		-> To enable Layer 7 ingress for swarm
 	t enable interlock-hitless		-> To enable hitless for interlock
