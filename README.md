@@ -25,6 +25,8 @@ What do you need before using this?
     2. Docker client 
     3. Internet Connection
     4. AWS account
+**Demo**:
+[![asciicast](https://asciinema.org/a/443155.svg)](https://asciinema.org/a/443155?speed=2)
 
 **You can now install MSRv3 with terratrain. 
 [Caution: None of the "t gen msr" or "t exec rethinkcli" commands are compitible with MSRv3]**
