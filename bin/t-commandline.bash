@@ -855,14 +855,29 @@ t-gen-client_bundleshort(){
 	kubectl get nodes || ( printf "Not working. May be credential issue" && exit 1 )
 }
 t-gen-msr_login() {
-	msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
-	if [[ -d /terraTrain/client-bundle ]] 
+	
+	if [ $(awk -F= -v key="msr_version_3" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") -eq 1 ] 
 		then 
-		curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
-		update-ca-certificates
-		docker login $msr -u $uname -p $pass
-	else 
-		echo "Please run \"t gen cb\" to generate client bundle first" 
+			msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+			msr_port=$(kubectl get svc msr -o json | jq '.spec.ports[1] | .nodePort' 2>/dev/null)
+			if [[ -d /terraTrain/client-bundle ]] 
+				then 
+					kubectl get secret msr-nginx-client-ca-cert -o jsonpath='{.data.ca\.crt}' | base64 -d > /usr/local/share/ca-certificates/$msr_address.crt
+					update-ca-certificates
+					docker login $msr_address:$msr_port -u admin -p pass
+			else 
+				echo "Please run \"t gen cb\" to generate client bundle first" 
+			fi
+	else
+			msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+			if [[ -d /terraTrain/client-bundle ]] 
+				then 
+					curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
+					update-ca-certificates
+					docker login $msr -u $uname -p $pass
+			else 
+				echo "Please run \"t gen cb\" to generate client bundle first" 
+			fi
 	fi
 }
 t-gen-ldap_server() {
@@ -955,20 +970,23 @@ t-gen-msr_populate() {
 }
 t-gen-msr_images() {
 	# Logging to MSR
-	printf "\nREMINDER: YOU NEED TO ADD LICENSE TO MSR AND GENERATE CLIENT-BUNDLE BEFORE RUNNING THIS COMMAND\nOTHERWISE IT WILL FAIL\n"
-	sleep 1
-	UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
-	uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
-	pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
-	auth=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
-	msr=$(curl -k -H "Authorization: Bearer $auth" https://$ucpurl/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
-	curl -k https://$msr/ca -o /usr/local/share/ca-certificates/$msr.crt 
-	update-ca-certificates
-	docker login $msr -u $uname -p $pass
+	t-gen-msr_login
+	if [ $(awk -F= -v key="msr_version_3" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") -eq 1 ] 
+		then
+			uname=admin
+			pass=password
+			msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+			msr_port=$(kubectl get svc msr -o json | jq '.spec.ports[1] | .nodePort' 2>/dev/null)
+			msr=${msr_address}:${msr_port}
+		else
+			UCP_URL=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0)| .attributes.public_dns' 2>/dev/null)
+			uname=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null)
+			pass=$(cat /terraTrain/terraform.tfstate 2>/dev/null | jq -r '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null)
+			auth=$(curl -sk -d "{\"username\": \"$uname\" , \"password\": \"$pass\" }" https://${UCP_URL}/auth/login | jq -r .auth_token)
+			msr=$(curl -k -H "Authorization: Bearer $auth" https://$UCP_URL/api/ucp/config/dtr 2>/dev/null| jq -r ' .registries[] | .hostAddress')
+	fi
 	printf "\nEnabling Create on push repository"
 	curl -k -u $uname:$pass -X POST https://$msr/api/v0/meta/settings -H "accept: application/json" -H "content-type: application/json" -d "{ \"createRepositoryOnPush\": true}" &>/dev/null
-	
-
 	# Pulling and pushing images
 	printf "\nStart Pulling and pushing\n"
 	docker pull nginx:alpine &> /dev/null 
@@ -1159,48 +1177,66 @@ t-show-ip-msrs
 t-show-ip-workers
 # t-show-ip-windows   # if windows VMs exist 
 }
-#### t show dns managers|msrs|workers|windows|all   
-t-show-dns() {
+#### t show url managers|msrs|workers|windows|all   
+t-show-url() {
 case "$1" in
-	m|manager|managers|man) t-show-dns-managers
+	m|manager|managers|man) t-show-url-managers
 			exit;;
-	ms|msr|msrs|dtrs|dtr|d)    t-show-dns-msrs
+	ms|msr|msrs|dtrs|dtr|d)    t-show-url-msrs
 			exit;;
-	w|wkr|wrk|work|worker|workers) t-show-dns-workers
+	w|wkr|wrk|work|worker|workers) t-show-url-workers
 			exit;;
-	wi|win|windows|winworker|winworkers) t-show-dns-windows
+	wi|win|windows|winworker|winworkers) t-show-url-windows
 			exit;;
-	a|al|all) t-show-dns-all
+	a|al|all) t-show-url-all
 		exit;;
-	*) echo "t show dns managers|msrs|workers|windows|all"
+	*) echo "t show url managers|msrs|workers|windows|all"
 	exit ;;
 esac
 }
-t-show-dns-managers() { 
+t-show-url-managers() { 
 	printf "\n\n Manager Nodes: \n"
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), PublicDNS: .attributes.public_dns}' 2>/dev/null
+	printf '\e[1;34m%-6s\e[m' "MKE Username: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
+	printf  '\e[1;34m%-6s\e[m' "MKE Password: "
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
+
 	}
-t-show-dns-workers() { 
-	printf "\n\n MSR Nodes: \n"
+t-show-url-workers() { 
+	printf "\n\n Worker Nodes: \n"
 	echo "-------------------------------------------------------------------------------"
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), PublicDNS: .attributes.public_dns}' 2>/dev/null
+	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="workerNode") | .instances[] | { Name: .attributes.tags.Name, PublicDNS: .attributes.public_dns}' 2>/dev/null
+
 	}
-t-show-dns-msrs() { 
-	printf "\n\n Workers Nodes: \n"
-	echo "-------------------------------------------------------------------------------"
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | { Name: .attributes.tags.Name, PublicDNS: .attributes.public_dns}' 2>/dev/null
+t-show-url-msrs() { 
+	if [ $(awk -F= -v key="msr_version_3" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") -eq 1 ] 
+		then 
+			msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+			msr_port=$(kubectl get svc msr -o json | jq '.spec.ports[1] | .nodePort' 2>/dev/null)
+			printf '\e[1;34m%-6s\e[m' "MSR URL: "
+			printf "\"https://$msr_address:$msr_port\"\n"
+			printf '\e[1;34m%-6s\e[m' "MSR Username: "
+			printf "\"admin\"\n"
+			printf '\e[1;34m%-6s\e[m' "MSR Password: "			
+			printf "\"password\"\n"
+	else
+			printf "\n\n MSR Nodes: \n"
+			echo "-------------------------------------------------------------------------------"
+			cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), PublicDNS: .attributes.public_dns}' 2>/dev/null
+	fi
 	}
-t-show-dns-windows() { 
+t-show-url-windows() { 
 	printf "\n\n Windows Nodes: \n"
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="winNode") | .instances[] | { Name: .attributes.tags.Name, PublicDNS: .attributes.public_dns}' 2>/dev/null
 	}
-t-show-dns-all() {
-t-show-dns-managers
-t-show-dns-msrs
-t-show-dns-workers
-# t-show-dns-windows   # if windows VMs exist 
+t-show-url-all() {
+t-show-url-managers
+t-show-url-msrs
+t-show-url-workers
+# t-show-url-windows   # if windows VMs exist 
 }
 #### t show hostname managers|msrs|workers|windows  
 t-show-hostname() {
@@ -1251,12 +1287,20 @@ t-show-creds-mke() {
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
 }
 t-show-creds-msr() { 
-	printf "\n\n MSR's Username and Password: \n"
-	echo "-------------------------------------------------------------------------------"	
-	printf '\e[1;34m%-6s\e[m' "Username: "
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
-	printf '\e[1;34m%-6s\e[m' "Password: "
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
+	if [ $(awk -F= -v key="msr_version_3" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") -eq 1 ] 
+		then 
+			printf '\e[1;34m%-6s\e[m' "MSR Username: "
+			printf "\"admin\"\n"
+			printf '\e[1;34m%-6s\e[m' "MSR Password: "			
+			printf "\"password\"\n"
+	else
+		printf "\n\n MSR's Username and Password: \n"
+		echo "-------------------------------------------------------------------------------"	
+		printf '\e[1;34m%-6s\e[m' "Username: "
+		cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
+		printf '\e[1;34m%-6s\e[m' "Password: "
+		cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
+	fi
 }
 t-show-creds-linux() { 
 	cat /terraTrain/key-pair
@@ -1369,13 +1413,28 @@ t-show-all() {
 	echo "-------------------------------------------------------------------------------"
 	printf  '\e[1;34m%-6s\e[m' "MKE URL: "
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | select(.index_key==0) | ("https://" + .attributes.public_dns)' 2>/dev/null
-	printf  '\e[1;34m%-6s\e[m' "MSR URL: "
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0)  | ("https://" + .attributes.public_dns)' 2>/dev/null
-	printf '\e[1;34m%-6s\e[m' "Username: "
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
-	printf  '\e[1;34m%-6s\e[m' "Password: "
-	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
-
+	if [ $(awk -F= -v key="msr_version_3" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") -eq 1 ] 
+		then 
+			msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+			msr_port=$(kubectl get svc msr -o json | jq '.spec.ports[1] | .nodePort' 2>/dev/null)
+			printf '\e[1;34m%-6s\e[m' "MSR URL: "
+			printf "\"https://$msr_address:$msr_port\"\n"
+			printf '\e[1;34m%-6s\e[m' "MSR Username: "
+			printf "\"admin\"\n"
+			printf '\e[1;34m%-6s\e[m' "MSR Password: "			
+			printf "\"password\"\n"
+			printf '\e[1;34m%-6s\e[m' "MKE Username: "
+			cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
+			printf  '\e[1;34m%-6s\e[m' "MKE Password: "
+			cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
+	else 
+		printf  '\e[1;34m%-6s\e[m' "MSR URL: "
+		cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0)  | ("https://" + .attributes.public_dns)' 2>/dev/null
+		printf '\e[1;34m%-6s\e[m' "Username: "
+		cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_username") | .instances[] | .attributes.id' 2>/dev/null
+		printf  '\e[1;34m%-6s\e[m' "Password: "
+		cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="mke_password") | .instances[] | .attributes.result' 2>/dev/null
+	fi
 	printf "\n\n Manager Nodes: \n"
 	echo "-------------------------------------------------------------------------------"
 	cat /terraTrain/terraform.tfstate 2>/dev/null | jq '.resources[] | select(.name=="managerNode") | .instances[] | { Name: .attributes.tags.Name, URL: ("https://" + .attributes.public_dns), Hostname: .attributes.private_dns, PublicDNS: .attributes.public_dns, PublicIP: .attributes.public_ip }' 2>/dev/null
@@ -1644,7 +1703,7 @@ t-install-msrv3() {
 	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.6.1/cert-manager.crds.yaml
 	sleep 20
 	
-	printf "\n${REVERSE}[Step-4]${YELLOW}Installing Postgresql Controller${NORMAL}"
+	printf "\n${REVERSE}[Step-4]${YELLOW}Installing Postgresql Controller${NORMAL}\n"
 	/terraTrain/bin/helm repo add postgres-operator https://opensource.zalando.com/postgres-operator/charts/postgres-operator/
 	/terraTrain/bin/helm repo up
 	/terraTrain/bin/helm --debug install postgres-operator postgres-operator/postgres-operator --set configKubernetes.spilo_runasuser=101 --set configKubernetes.spilo_runasgroup=103 --set configKubernetes.spilo_fsgroup=103
@@ -1665,15 +1724,32 @@ t-install-msrv3() {
 				fi
 	done
 	sleep 5
-	printf "\n${REVERSE}[Final-Step]${YELLOW}Installing MSR${NORMAL}\n"
-	/terraTrain/bin/helm --debug install msr msr --repo https://registry.mirantis.com/charts/msr/msr --version $(awk -F= -v key="msr_version" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n")
+	printf "\n${REVERSE}[Step-5]${YELLOW}Creating Certificate for MSR${NORMAL}\n"
+	mkdir /tmp/msrcert
+	cd /tmp/msrcert
+	msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
+	cat > ${msr_address}.conf << EOL
+[req]
+distinguished_name=req
+[SAN]
+subjectAltName=DNS:$msr_address
+EOL
+	openssl req -newkey rsa:2048 -nodes -keyout ${msr_address}.key -x509 -days 365 -out ${msr_address}.cert -subj /CN=${msr_address} -extensions SAN -config "${msr_address}.conf"
+	kubectl create secret tls ${msr_address} --cert ${msr_address}.cert --key ${msr_address}.key
 	
+	printf "\n${REVERSE}[Final-Step]${YELLOW}Installing MSR${NORMAL}\n"
+	/terraTrain/bin/helm --debug install msr msr --repo https://registry.mirantis.com/charts/msr/msr --version $(awk -F= -v key="msr_version" '$1==key {print $2}' /terraTrain/config  | tr -d '"' | cut -d' ' -f1 | tr -d "\n") --set nginx.webtls.create=false --set nginx.webtls.secretName=${msr_address}
+	if [ $? -ne 1]
+		then
+			printf "\nInstallation was unsuccessfull\n"
+			exit 1
+	fi
 	printf "\n${REVERSE}[Installation is Done]${YELLOW}Checking the services${NORMAL}\n"
 		for i in $(seq 5)
 			do
-				if [[ $(kubectl get pods --namespace default -l "app.kubernetes.io/name=msr,app.kubernetes.io/instance=msr,app.kubernetes.io/component=nginx" -o jsonpath="{.items[0].status.phase}") == "Running" ]]; then
+				if [[ $(kubectl get pods --namespace default -l "app.kubernetes.io/name=msr,app.kubernetes.io/instance=msr,app.kubernetes.io/component=nginx" -o jsonpath="{.items[0].status.phase}") != "Running" ]]; then
 					if [ $i -eq 5 ] ; then 
-						echo "Not ready! The MSR WebUI/Nginx is not working"
+						printf "\n${REVERSE}[Final-Step]${RED} Not ready! The MSR WebUI/Nginx is not working${NORMAL}\n"
 						exit 1				
 					fi
 					printf "\n${REVERSE}[Final-Step]${RED} The MSR WebUI/Nginx is not ready. Waiting for 5 more seconds${NORMAL}\n"
@@ -1684,10 +1760,14 @@ t-install-msrv3() {
 					break
 				fi
 			done
-
-        msr_address=$(cat /terraTrain/terraform.tfstate |  jq -r '.resources[] | select(.name=="msrNode") | .instances[] | select(.index_key==0) | .attributes.public_dns')
-
-
+		echo "Publishing the MSR service to NodePort at 34000"
+		kubectl patch svc msr --type='json' -p '[{"op":"replace","path":"/spec/type","value":"NodePort"},{"op":"replace","path":"/spec/ports/1/nodePort","value":34000}]'		
+        if [ $? -ne 0 ] ; then
+			echo "Trying other ports"
+					kubectl patch svc msr --type='json' -p '[{"op":"replace","path":"/spec/type","value":"NodePort"}]'
+		fi
+		msr_port=$(kubectl get svc msr -o json | jq '.spec.ports[1] | .nodePort')
+		printf "\n${REVERSE}MSR URL:${YELLOW}https://$msr_address:$msr_port${NORMAL}\n"
 }
 ##### 1st level usage function : 
 usage1() {
@@ -1886,7 +1966,7 @@ elif [ $# -eq 3 ]; then
 			case "$2" in 
 			"ip") t-show-ip "$3"
 					exit;;
-			"dns") t-show-dns "$3"
+			"url") t-show-url "$3"
 					exit;;
 			"hostname") t-show-hostname "$3"
 					exit;;
