@@ -121,7 +121,10 @@ What do you need before using this?
 
 # Configuring and Running terraTrain
 ### Install the platform
-
+Clone locally the repository on your linux machine (or in your linux virtual machine) 
+```
+git clone https://github.com/muhammad-arif/terraTrain.git && cd terraTrain
+```
 Pull the Image from the dockerhub
 ```
 docker pull cgroups/terratrain:latest
@@ -171,10 +174,11 @@ To delete the lab,
 ```
 t destroy lab
 ```
-If you forget to delete the cluster and exit out of the container, then just run the container again and exec into it and purge the cluster.
+If you forget to delete the cluster/lab and exit out of the container, then just run the container again and exec into it and purge the cluster.
 ```
-docker container exec -it name-of-container bash 
+docker container exec -it id-of-container bash 
 ```
+If now the command t destory lab complains about your AWS credentials (due to your AWS session is timed out), just sign out of your AWS session, and login again and copy-paste the new PowerUserAccess tokens  
 # terratrain Command Line Tool reference 
 `/bin/terratrain` or `/bin/t` is a command line tool created with simple bash to manupulate the resources of the terratrain platform.
 This tool has been inspired from the `kubectl` tool so you might interpret it's use a bit easily. 
